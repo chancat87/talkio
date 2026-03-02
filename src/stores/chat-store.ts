@@ -46,7 +46,7 @@ export interface ChatState {
   autoDiscussTotalRounds: number;
 
   // In-memory streaming state — not persisted, used for rAF updates
-  streamingMessage: StreamingState | null;
+  streamingMessages: StreamingState[];
 
   createConversation: (
     modelId: string,
@@ -156,7 +156,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeBranchId: null,
   autoDiscussRemaining: 0,
   autoDiscussTotalRounds: 0,
-  streamingMessage: null,
+  streamingMessages: [],
 
   createConversation: async (
     modelId: string,
@@ -213,7 +213,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({
         currentConversationId: id,
         isGenerating: id ? _abortControllers.has(id) : false,
-        streamingMessage: id ? (_streamingMessages.get(id) ?? null) : null,
+        streamingMessages: id ? Array.from(_streamingMessages.values()).filter((s) => s.cid === id) : [],
       });
     }
   },
@@ -275,19 +275,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       compressionThreshold: compressionSettings.contextCompressionThreshold,
       streamingMessages: _streamingMessages,
       getCurrentConversationId: () => get().currentConversationId,
-      setStoreState: (partial: { streamingMessage: StreamingState | null }) => set(partial),
+      setStoreState: (partial: { streamingMessages: StreamingState[] }) => set(partial),
     };
 
     try {
-      for (let i = 0; i < targets.length; i++) {
-        if (abortController.signal.aborted) break;
-        await generateForParticipant(ctx, targets[i], i);
+      if (conv.speakingOrder === "parallel" && targets.length > 1) {
+        await Promise.all(
+          targets.map((target, i) => generateForParticipant(ctx, target, i)),
+        );
+      } else {
+        for (let i = 0; i < targets.length; i++) {
+          if (abortController.signal.aborted) break;
+          await generateForParticipant(ctx, targets[i], i);
+        }
       }
     } finally {
       _abortControllers.delete(cid);
-      _streamingMessages.delete(cid);
+      // Clean up all streaming states for this conversation
+      for (const [key, val] of _streamingMessages) {
+        if (val.cid === cid) _streamingMessages.delete(key);
+      }
       if (cid === get().currentConversationId) {
-        set({ isGenerating: false, streamingMessage: null });
+        set({ isGenerating: false, streamingMessages: [] });
       }
     }
   },

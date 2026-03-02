@@ -105,6 +105,7 @@
     "speakingOrder": "发言顺序",
     "sequential": "顺序发言",
     "random": "随机抢答",
+    "parallel": "同时回复",
     "autoDiscuss": "托管讨论",
     "autoDiscussHint": "系统将自动代替你发送“继续”来驱动讨论",
     "autoDiscussRounds": "{{count}} 轮",

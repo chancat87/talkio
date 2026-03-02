@@ -120,7 +120,7 @@ export interface ConversationParticipant {
   identityId: string | null;
 }
 
-export type SpeakingOrder = "sequential" | "random";
+export type SpeakingOrder = "sequential" | "random" | "parallel";
 
 export interface Conversation {
   id: string;

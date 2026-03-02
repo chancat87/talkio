@@ -105,6 +105,7 @@
     "speakingOrder": "Speaking Order",
     "sequential": "Sequential",
     "random": "Random",
+    "parallel": "Parallel",
     "autoDiscuss": "Auto-pilot",
     "autoDiscussHint": "System will auto-send \"Continue\" on your behalf to drive the discussion",
     "autoDiscussRounds": "{{count}} rounds",

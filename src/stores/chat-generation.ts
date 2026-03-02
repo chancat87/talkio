@@ -37,6 +37,7 @@ const MAX_HISTORY = 200;
 // ── Types ──
 
 export interface StreamingState {
+  cid: string;
   messageId: string;
   content: string;
   reasoning: string;
@@ -53,7 +54,7 @@ export interface GenerationContext {
   compressionThreshold: number;
   streamingMessages: Map<string, StreamingState>;
   getCurrentConversationId: () => string | null;
-  setStoreState: (partial: { streamingMessage: StreamingState | null }) => void;
+  setStoreState: (partial: { streamingMessages: StreamingState[] }) => void;
 }
 
 // ── Helpers ──
@@ -82,10 +83,11 @@ function createStreamFlusher(
     rafPending = false;
     if (!dirty) return;
     dirty = false;
-    const sm: StreamingState = { messageId, content: getContent(), reasoning: getReasoning() };
-    ctx.streamingMessages.set(ctx.cid, sm);
+    const sm: StreamingState = { cid: ctx.cid, messageId, content: getContent(), reasoning: getReasoning() };
+    ctx.streamingMessages.set(messageId, sm);
     if (ctx.cid === ctx.getCurrentConversationId()) {
-      ctx.setStoreState({ streamingMessage: sm });
+      const all = Array.from(ctx.streamingMessages.values()).filter((s) => s.cid === ctx.cid);
+      ctx.setStoreState({ streamingMessages: all });
     }
   }
 
@@ -320,19 +322,15 @@ async function runToolCallLoop(
     ];
 
     // Stream follow-up
-    ctx.streamingMessages.set(ctx.cid, {
+    ctx.streamingMessages.set(assistantMsgId, {
+      cid: ctx.cid,
       messageId: assistantMsgId,
       content: accumulatedContent,
       reasoning: fullReasoning,
     });
     if (ctx.cid === ctx.getCurrentConversationId()) {
-      ctx.setStoreState({
-        streamingMessage: {
-          messageId: assistantMsgId,
-          content: accumulatedContent,
-          reasoning: fullReasoning,
-        },
-      });
+      const all = Array.from(ctx.streamingMessages.values()).filter((s) => s.cid === ctx.cid);
+      ctx.setStoreState({ streamingMessages: all });
     }
 
     const response = await appFetch(`${baseUrl}/chat/completions`, {
@@ -519,11 +517,10 @@ export async function generateForParticipant(
   notifyDbChange("messages", ctx.cid);
 
   // Init streaming state
-  ctx.streamingMessages.set(ctx.cid, { messageId: assistantMsgId, content: "", reasoning: "" });
+  ctx.streamingMessages.set(assistantMsgId, { cid: ctx.cid, messageId: assistantMsgId, content: "", reasoning: "" });
   if (ctx.cid === ctx.getCurrentConversationId()) {
-    ctx.setStoreState({
-      streamingMessage: { messageId: assistantMsgId, content: "", reasoning: "" },
-    });
+    const all = Array.from(ctx.streamingMessages.values()).filter((s) => s.cid === ctx.cid);
+    ctx.setStoreState({ streamingMessages: all });
   }
 
   const baseUrl = provider.baseUrl.replace(/\/+$/, "");
@@ -651,8 +648,8 @@ export async function generateForParticipant(
     return lastContent;
   } catch (err: any) {
     if (err.name === "AbortError") {
-      const sm = ctx.streamingMessages.get(ctx.cid);
-      if (sm && sm.messageId === assistantMsgId) {
+      const sm = ctx.streamingMessages.get(assistantMsgId);
+      if (sm) {
         await updateMessage(assistantMsgId, {
           content: sm.content,
           reasoningContent: sm.reasoning || null,
@@ -674,9 +671,10 @@ export async function generateForParticipant(
     }
     return "";
   } finally {
-    ctx.streamingMessages.delete(ctx.cid);
+    ctx.streamingMessages.delete(assistantMsgId);
     if (ctx.cid === ctx.getCurrentConversationId()) {
-      ctx.setStoreState({ streamingMessage: null });
+      const all = Array.from(ctx.streamingMessages.values()).filter((s) => s.cid === ctx.cid);
+      ctx.setStoreState({ streamingMessages: all });
     }
   }
 }

@@ -13,6 +13,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   Shuffle,
+  Layers,
   GripVertical,
   Plus,
   Minimize2,
@@ -229,7 +230,7 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-border bg-background flex flex-shrink-0 items-center gap-2 border-b px-4 py-2.5">
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center">
           {isEditingTitle ? (
             <form
               className="flex items-center gap-1.5"
@@ -254,43 +255,45 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
               />
             </form>
           ) : (
-            <button
-              className="flex items-center gap-1.5 text-left transition-opacity hover:opacity-70"
-              onClick={() => {
-                if (isGroup) {
-                  setShowParticipants((v) => !v);
-                  setShowIdentityPanel(false);
-                } else {
-                  setShowIdentityPanel((v) => !v);
-                  setShowParticipants(false);
-                }
-              }}
-            >
-              <span className="text-foreground truncate text-sm font-semibold">{title}</span>
-              <span className="text-muted-foreground truncate text-xs">·</span>
-              {isGroup ? (
-                <Users size={12} className="text-primary flex-shrink-0" />
-              ) : (
-                <User size={12} className="text-primary flex-shrink-0" />
+            <>
+              {isGroup && (
+                <button
+                  className="mr-1 flex-shrink-0 hover:opacity-70"
+                  onClick={() => {
+                    setEditTitle(conv?.title ?? "");
+                    setIsEditingTitle(true);
+                  }}
+                >
+                  <Pencil size={12} className="text-muted-foreground" />
+                </button>
               )}
-              <span className="text-primary truncate text-xs">{subtitle}</span>
-              {showIdentityPanel || showParticipants ? (
-                <ChevronUp size={12} className="text-muted-foreground flex-shrink-0" />
-              ) : (
-                <ChevronDown size={12} className="text-muted-foreground flex-shrink-0" />
-              )}
-            </button>
-          )}
-          {isGroup && !isEditingTitle && (
-            <button
-              className="ml-1 flex-shrink-0 hover:opacity-70"
-              onClick={() => {
-                setEditTitle(conv?.title ?? "");
-                setIsEditingTitle(true);
-              }}
-            >
-              <Pencil size={12} className="text-muted-foreground" />
-            </button>
+              <button
+                className="flex min-w-0 items-center gap-1.5 text-left transition-opacity hover:opacity-70"
+                onClick={() => {
+                  if (isGroup) {
+                    setShowParticipants((v) => !v);
+                    setShowIdentityPanel(false);
+                  } else {
+                    setShowIdentityPanel((v) => !v);
+                    setShowParticipants(false);
+                  }
+                }}
+              >
+                <span className="text-foreground truncate text-sm font-semibold">{title}</span>
+                <span className="text-muted-foreground truncate text-xs">·</span>
+                {isGroup ? (
+                  <Users size={12} className="text-primary flex-shrink-0" />
+                ) : (
+                  <User size={12} className="text-primary flex-shrink-0" />
+                )}
+                <span className="text-primary truncate text-xs">{subtitle}</span>
+                {showIdentityPanel || showParticipants ? (
+                  <ChevronUp size={12} className="text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <ChevronDown size={12} className="text-muted-foreground flex-shrink-0" />
+                )}
+              </button>
+            </>
           )}
         </div>
 
@@ -436,6 +439,16 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
               onClick={() => useChatStore.getState().updateSpeakingOrder(conversationId, "random")}
             >
               <Shuffle size={11} /> {t("chat.random")}
+            </button>
+            <button
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                conv.speakingOrder === "parallel"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50"
+              }`}
+              onClick={() => useChatStore.getState().updateSpeakingOrder(conversationId, "parallel")}
+            >
+              <Layers size={11} /> {t("chat.parallel")}
             </button>
           </div>
           <DndContext

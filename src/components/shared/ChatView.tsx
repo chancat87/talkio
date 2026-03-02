@@ -83,7 +83,7 @@ export function ChatView({
   const messages = useMessages(conversationId, activeBranchId);
   const setCurrentConversation = useChatStore((s: ChatState) => s.setCurrentConversation);
   const isGenerating = useChatStore((s: ChatState) => s.isGenerating);
-  const streamingMessage = useChatStore((s: ChatState) => s.streamingMessage);
+  const streamingMessages = useChatStore((s: ChatState) => s.streamingMessages);
   const sendMessage = useChatStore((s: ChatState) => s.sendMessage);
   const stopGeneration = useChatStore((s: ChatState) => s.stopGeneration);
   const startAutoDiscuss = useChatStore((s: ChatState) => s.startAutoDiscuss);
@@ -131,48 +131,52 @@ export function ChatView({
   }, [isGenerating, scrollToBottom]);
 
   const displayMessages = useMemo(() => {
-    if (!streamingMessage) return messages;
-    const found = messages.some((m) => m.id === streamingMessage.messageId);
+    if (streamingMessages.length === 0) return messages;
+    const streamMap = new Map(streamingMessages.map((sm) => [sm.messageId, sm]));
+    const foundIds = new Set<string>();
     const mapped = messages.map((m) => {
-      if (m.id === streamingMessage.messageId) {
+      const sm = streamMap.get(m.id);
+      if (sm) {
+        foundIds.add(m.id);
         return {
           ...m,
-          content: streamingMessage.content,
-          reasoningContent: streamingMessage.reasoning || null,
+          content: sm.content,
+          reasoningContent: sm.reasoning || null,
           status: MessageStatus.STREAMING,
         };
       }
       return m;
     });
-    // If the assistant message hasn't loaded from DB yet but streaming has started,
-    // append a synthetic entry so the streaming content renders immediately in the DOM.
-    if (!found) {
-      mapped.push({
-        id: streamingMessage.messageId,
-        conversationId: conversationId,
-        role: "assistant",
-        senderModelId: null,
-        senderName: "",
-        identityId: null,
-        participantId: null,
-        content: streamingMessage.content,
-        images: [],
-        generatedImages: [],
-        reasoningContent: streamingMessage.reasoning || null,
-        reasoningDuration: null,
-        toolCalls: [],
-        toolResults: [],
-        branchId: null,
-        parentMessageId: null,
-        isStreaming: true,
-        status: MessageStatus.STREAMING,
-        errorMessage: null,
-        tokenUsage: null,
-        createdAt: new Date().toISOString(),
-      });
+    // Append synthetic entries for streaming messages not yet loaded from DB
+    for (const sm of streamingMessages) {
+      if (!foundIds.has(sm.messageId)) {
+        mapped.push({
+          id: sm.messageId,
+          conversationId: conversationId,
+          role: "assistant",
+          senderModelId: null,
+          senderName: "",
+          identityId: null,
+          participantId: null,
+          content: sm.content,
+          images: [],
+          generatedImages: [],
+          reasoningContent: sm.reasoning || null,
+          reasoningDuration: null,
+          toolCalls: [],
+          toolResults: [],
+          branchId: null,
+          parentMessageId: null,
+          isStreaming: true,
+          status: MessageStatus.STREAMING,
+          errorMessage: null,
+          tokenUsage: null,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
     return mapped;
-  }, [messages, streamingMessage, conversationId]);
+  }, [messages, streamingMessages, conversationId]);
 
   const handleSend = useCallback(
     (text: string, mentionedParticipantIds?: string[], images?: string[]) => {

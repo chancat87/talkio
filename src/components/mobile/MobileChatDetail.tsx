@@ -472,6 +472,19 @@ export function MobileChatDetail({
             >
               {t("chat.random")}
             </button>
+            <button
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium active:opacity-60 ${
+                conv.speakingOrder === "parallel" ? "text-primary" : "text-muted-foreground"
+              }`}
+              style={
+                conv.speakingOrder === "parallel"
+                  ? { backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)" }
+                  : {}
+              }
+              onClick={() => useChatStore.getState().updateSpeakingOrder(conversationId, "parallel")}
+            >
+              {t("chat.parallel")}
+            </button>
           </div>
           <MobileDndParticipantList
             participants={conv.participants}
