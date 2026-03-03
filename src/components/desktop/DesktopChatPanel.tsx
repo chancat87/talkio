@@ -447,7 +447,8 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
       {/* Group participants panel */}
       {isGroup && showParticipants && conv && (
         <div className="border-border bg-card flex-shrink-0 border-b px-4 py-2">
-          {/* Speaking order toggle */}
+          {/* Speaking order toggle — hidden when moderator is set */}
+          {!conv.moderatorId && (
           <div className="border-border mb-2 flex items-center gap-2 border-b pb-2">
             <span className="text-muted-foreground text-[11px] font-medium">
               {t("chat.speakingOrder")}
@@ -486,6 +487,7 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
               <Layers size={11} /> {t("chat.parallel")}
             </button>
           </div>
+          )}
           {/* Group system prompt */}
           <div className="border-border mb-2 border-b pb-2">
             <MentionTextarea

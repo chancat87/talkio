@@ -65,12 +65,22 @@ export function getParticipantLabel(
  * Build a group chat roster string that explains the participants to each AI.
  */
 export function buildGroupRoster(conv: Conversation, selfParticipantId: string | null): string {
+  const moderatorParticipant = conv.moderatorId
+    ? conv.participants.find((p) => p.id === conv.moderatorId)
+    : null;
+  const moderatorLabel = moderatorParticipant
+    ? getParticipantLabel(moderatorParticipant, conv.participants)
+    : null;
+  const isSelfModerator = conv.moderatorId === selfParticipantId;
+
   const lines = conv.participants.map((p) => {
     const label = getParticipantLabel(p, conv.participants);
     const isSelf = p.id === selfParticipantId;
-    return `- ${label}${isSelf ? "  ← you" : ""}`;
+    const isMod = p.id === conv.moderatorId;
+    return `- ${label}${isSelf ? "  ← you" : ""}${isMod ? "  [moderator]" : ""}`;
   });
-  return [
+
+  const baseRules = [
     "You are in a group chat with multiple AI participants and one human user.",
     "Participants:",
     ...lines,
@@ -82,7 +92,28 @@ export function buildGroupRoster(conv: Conversation, selfParticipantId: string |
     "Think independently — form your own opinions and do not simply agree with or echo others.",
     "If you disagree, say so directly and explain why. Constructive debate is encouraged.",
     "Do not repeat, summarize, or rephrase what others said unless asked.",
-  ].join("\n");
+  ];
+
+  if (moderatorLabel) {
+    if (isSelfModerator) {
+      baseRules.push(
+        "",
+        `You are the MODERATOR of this discussion.`,
+        `Use the ask_participant tool to invite specific participants to speak.`,
+        `You control the flow: decide who speaks, when, and on what topic.`,
+        `When the discussion is complete, give your final summary without calling ask_participant.`,
+      );
+    } else {
+      baseRules.push(
+        "",
+        `The moderator is ${moderatorLabel}. You are NOT the moderator.`,
+        `Focus on answering questions and contributing your perspective when asked.`,
+        `Do not try to moderate or direct the discussion.`,
+      );
+    }
+  }
+
+  return baseRules.join("\n");
 }
 
 /**
