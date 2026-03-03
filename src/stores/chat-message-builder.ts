@@ -86,6 +86,26 @@ export function buildGroupRoster(conv: Conversation, selfParticipantId: string |
 }
 
 /**
+ * Extract @mentioned participant IDs from AI response content.
+ * Matches @ModelDisplayName patterns against conversation participants.
+ */
+export function extractMentionedParticipants(
+  content: string,
+  conv: Conversation,
+  selfParticipantId: string,
+): string[] {
+  const mentioned = new Set<string>();
+  for (const p of conv.participants) {
+    if (p.id === selfParticipantId) continue;
+    const label = getParticipantLabel(p, conv.participants);
+    if (content.includes(`@${label}`)) {
+      mentioned.add(p.id);
+    }
+  }
+  return [...mentioned];
+}
+
+/**
  * Build the API messages array for a specific participant,
  * applying system prompts, group roster, and role mapping.
  */
