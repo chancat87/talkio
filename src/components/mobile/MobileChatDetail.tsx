@@ -493,6 +493,21 @@ export function MobileChatDetail({
               {t("chat.parallel")}
             </button>
           </div>
+          {/* Group system prompt */}
+          <div className="border-border mb-2 border-b pb-2">
+            <textarea
+              className="text-foreground placeholder:text-muted-foreground w-full resize-none rounded-lg border-0 bg-transparent px-0 py-1 text-xs leading-relaxed outline-none"
+              rows={2}
+              placeholder={t("chat.groupPromptPlaceholder")}
+              defaultValue={conv.groupSystemPrompt ?? ""}
+              onBlur={(e) => {
+                const val = e.target.value.trim();
+                if (val !== (conv.groupSystemPrompt ?? "")) {
+                  useChatStore.getState().updateGroupSystemPrompt(conversationId, val);
+                }
+              }}
+            />
+          </div>
           <MobileDndParticipantList
             participants={conv.participants}
             conversationId={conversationId}

@@ -106,6 +106,8 @@
     "sequential": "Sequential",
     "random": "Random",
     "parallel": "Parallel",
+    "groupPrompt": "Group Prompt",
+    "groupPromptPlaceholder": "Set a shared prompt for all participants...",
     "autoDiscuss": "Auto-pilot",
     "autoDiscussHint": "System will auto-send \"Continue\" on your behalf to drive the discussion",
     "autoDiscussRounds": "{{count}} rounds",

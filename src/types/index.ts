@@ -128,6 +128,7 @@ export interface Conversation {
   title: string;
   participants: ConversationParticipant[];
   speakingOrder?: SpeakingOrder;
+  groupSystemPrompt?: string;
   lastMessage: string | null;
   lastMessageAt: string | null;
   pinned: boolean;

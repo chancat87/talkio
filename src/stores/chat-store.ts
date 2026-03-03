@@ -92,6 +92,7 @@ export interface ChatState {
   removeParticipant: (conversationId: string, participantId: string) => Promise<void>;
   renameConversation: (conversationId: string, title: string) => Promise<void>;
   updateSpeakingOrder: (conversationId: string, order: SpeakingOrder) => Promise<void>;
+  updateGroupSystemPrompt: (conversationId: string, prompt: string) => Promise<void>;
   reorderParticipants: (conversationId: string, participantIds: string[]) => Promise<void>;
 }
 
@@ -517,6 +518,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   updateSpeakingOrder: async (conversationId: string, order) => {
     await updateConversation(conversationId, { speakingOrder: order });
+    notifyDbChange("conversations");
+  },
+
+  updateGroupSystemPrompt: async (conversationId: string, prompt: string) => {
+    await updateConversation(conversationId, { groupSystemPrompt: prompt });
     notifyDbChange("conversations");
   },
 

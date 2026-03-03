@@ -115,8 +115,11 @@ export function buildApiMessagesForParticipant(
 
   if (isGroup) {
     const roster = buildGroupRoster(conv, participant.id);
-    const groupPrompt =
-      (identity?.systemPrompt ? `${identity.systemPrompt}\n\n${roster}` : roster) + workspaceHint;
+    const parts: string[] = [];
+    if (conv.groupSystemPrompt) parts.push(conv.groupSystemPrompt);
+    if (identity?.systemPrompt) parts.push(identity.systemPrompt);
+    parts.push(roster);
+    const groupPrompt = parts.join("\n\n") + workspaceHint;
     apiMessages.push({ role: "system", content: groupPrompt });
   } else if (identity?.systemPrompt || workspaceHint) {
     apiMessages.push({ role: "system", content: (identity?.systemPrompt || "") + workspaceHint });
