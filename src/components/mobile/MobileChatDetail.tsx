@@ -80,6 +80,14 @@ export function MobileChatDetail({
   const [editTitle, setEditTitle] = useState("");
   const [groupPromptText, setGroupPromptText] = useState(conv?.groupSystemPrompt ?? "");
   useEffect(() => { setGroupPromptText(conv?.groupSystemPrompt ?? ""); }, [conversationId]);
+  useEffect(() => {
+    const trimmed = groupPromptText.trim();
+    if (trimmed === (conv?.groupSystemPrompt ?? "")) return;
+    const timer = setTimeout(() => {
+      useChatStore.getState().updateGroupSystemPrompt(conversationId, trimmed);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [groupPromptText, conversationId]);
   const participantMentions = useMemo(
     () => (conv?.participants ?? []).map((p) => {
       const m = getModelById(p.modelId);
@@ -512,12 +520,6 @@ export function MobileChatDetail({
               mentions={participantMentions}
               value={groupPromptText}
               onChange={setGroupPromptText}
-              onBlur={() => {
-                const val = groupPromptText.trim();
-                if (val !== (conv.groupSystemPrompt ?? "")) {
-                  useChatStore.getState().updateGroupSystemPrompt(conversationId, val);
-                }
-              }}
             />
           </div>
           <MobileDndParticipantList
