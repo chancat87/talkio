@@ -67,6 +67,8 @@ function SortableParticipantRow({
   onEditRole,
   onRemove,
   isSequential,
+  isModerator,
+  onToggleModerator,
 }: {
   participant: ConversationParticipant;
   index: number;
@@ -75,6 +77,8 @@ function SortableParticipantRow({
   onEditRole: () => void;
   onRemove: () => void;
   isSequential: boolean;
+  isModerator: boolean;
+  onToggleModerator: () => void;
 }) {
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -105,6 +109,13 @@ function SortableParticipantRow({
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-[13px] font-medium">{displayName}</p>
       </div>
+      <button
+        className={`flex-shrink-0 rounded p-1 text-[13px] transition-opacity hover:opacity-80 ${isModerator ? "text-amber-500" : "text-muted-foreground/30"}`}
+        onClick={onToggleModerator}
+        title={isModerator ? t("chat.removeModerator") : t("chat.setModerator")}
+      >
+        👑
+      </button>
       <button
         className="flex-shrink-0 rounded px-2 py-0.5 text-[11px] transition-opacity hover:opacity-80"
         style={{
@@ -519,6 +530,13 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
                   }}
                   onRemove={() => removeParticipant(conversationId, p.id)}
                   isSequential={(conv.speakingOrder ?? "sequential") === "sequential"}
+                  isModerator={conv.moderatorId === p.id}
+                  onToggleModerator={() => {
+                    useChatStore.getState().setModerator(
+                      conversationId,
+                      conv.moderatorId === p.id ? null : p.id,
+                    );
+                  }}
                 />
               ))}
             </SortableContext>

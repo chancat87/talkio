@@ -27,6 +27,8 @@ function MobileSortableRow({
   onEditRole,
   onRemove,
   isSequential,
+  isModerator,
+  onToggleModerator,
 }: {
   participant: ConversationParticipant;
   index: number;
@@ -35,6 +37,8 @@ function MobileSortableRow({
   onEditRole: () => void;
   onRemove: () => void;
   isSequential: boolean;
+  isModerator: boolean;
+  onToggleModerator: () => void;
 }) {
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -73,6 +77,12 @@ function MobileSortableRow({
         <p className="text-foreground truncate text-[13px] font-medium">{displayName}</p>
       </div>
       <button
+        className={`flex-shrink-0 rounded p-1 text-[13px] active:opacity-60 ${isModerator ? "text-amber-500" : "text-muted-foreground/30"}`}
+        onClick={onToggleModerator}
+      >
+        👑
+      </button>
+      <button
         className="flex-shrink-0 rounded px-2 py-0.5 text-[11px] active:opacity-60"
         style={{
           backgroundColor: "color-mix(in srgb, var(--primary) 8%, transparent)",
@@ -97,6 +107,8 @@ export function MobileDndParticipantList({
   getIdentityById,
   onEditRole,
   onRemove,
+  moderatorId,
+  onToggleModerator,
 }: {
   participants: ConversationParticipant[];
   conversationId: string;
@@ -105,6 +117,8 @@ export function MobileDndParticipantList({
   getIdentityById: (id: string) => any;
   onEditRole: (participantId: string) => void;
   onRemove: (participantId: string, displayName: string) => void;
+  moderatorId?: string;
+  onToggleModerator: (participantId: string) => void;
 }) {
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
   const touchSensor = useSensor(TouchSensor, {
@@ -141,6 +155,8 @@ export function MobileDndParticipantList({
               onRemove(p.id, m?.displayName ?? p.modelId);
             }}
             isSequential={isSequential}
+            isModerator={moderatorId === p.id}
+            onToggleModerator={() => onToggleModerator(p.id)}
           />
         ))}
       </SortableContext>

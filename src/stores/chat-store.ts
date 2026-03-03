@@ -10,7 +10,6 @@ import {
   resolveTargetParticipants,
   createUserMessage,
   buildApiMessagesForParticipant,
-  extractMentionedParticipants,
 } from "./chat-message-builder";
 import {
   insertConversation,
@@ -94,6 +93,7 @@ export interface ChatState {
   renameConversation: (conversationId: string, title: string) => Promise<void>;
   updateSpeakingOrder: (conversationId: string, order: SpeakingOrder) => Promise<void>;
   updateGroupSystemPrompt: (conversationId: string, prompt: string) => Promise<void>;
+  setModerator: (conversationId: string, participantId: string | null) => Promise<void>;
   reorderParticipants: (conversationId: string, participantIds: string[]) => Promise<void>;
 }
 
@@ -252,7 +252,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     _abortControllers.set(cid, abortController);
     if (cid === get().currentConversationId) set({ isGenerating: true });
 
-    const targets = resolveTargetParticipants(conv, options?.mentionedParticipantIds);
+    // In moderated mode, only the moderator responds; otherwise use normal target resolution
+    const moderator = conv.moderatorId
+      ? conv.participants.find((p) => p.id === conv.moderatorId)
+      : null;
+    const targets = moderator ? [moderator] : resolveTargetParticipants(conv, options?.mentionedParticipantIds);
 
     // Pre-compute compression summary once for group chats
     const cachedCompressionSummary = await preComputeCompression(
@@ -280,41 +284,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       setStoreState: (partial: { streamingMessages: StreamingState[] }) => set(partial),
     };
 
-    const MAX_MENTION_ROUNDS = 2;
     try {
-      let currentTargets = targets;
-      for (let round = 0; round <= MAX_MENTION_ROUNDS; round++) {
-        if (abortController.signal.aborted || currentTargets.length === 0) break;
-
-        // Generate replies for current targets
-        const responses: { participantId: string; content: string }[] = [];
-        if (conv.speakingOrder === "parallel" && currentTargets.length > 1) {
-          const results = await Promise.all(
-            currentTargets.map((target, i) => generateForParticipant(ctx, target, i)),
-          );
-          currentTargets.forEach((t, i) => responses.push({ participantId: t.id, content: results[i] }));
-        } else {
-          for (let i = 0; i < currentTargets.length; i++) {
-            if (abortController.signal.aborted) break;
-            const content = await generateForParticipant(ctx, currentTargets[i], i);
-            responses.push({ participantId: currentTargets[i].id, content });
-          }
+      if (conv.speakingOrder === "parallel" && targets.length > 1) {
+        await Promise.all(
+          targets.map((target, i) => generateForParticipant(ctx, target, i)),
+        );
+      } else {
+        for (let i = 0; i < targets.length; i++) {
+          if (abortController.signal.aborted) break;
+          await generateForParticipant(ctx, targets[i], i);
         }
-
-        // Check for @mentions in responses (only in group chats, skip last allowed round)
-        if (conv.type !== "group" || round >= MAX_MENTION_ROUNDS) break;
-        const mentionedIds = new Set<string>();
-        for (const r of responses) {
-          if (!r.content) continue;
-          const ids = extractMentionedParticipants(r.content, conv, r.participantId);
-          for (const id of ids) mentionedIds.add(id);
-        }
-        // Remove participants that just responded (avoid echo loops)
-        for (const r of responses) mentionedIds.delete(r.participantId);
-        if (mentionedIds.size === 0) break;
-
-        // Queue mentioned participants for next round
-        currentTargets = conv.participants.filter((p) => mentionedIds.has(p.id));
       }
     } finally {
       _abortControllers.delete(cid);
@@ -549,6 +528,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   updateGroupSystemPrompt: async (conversationId: string, prompt: string) => {
     await updateConversation(conversationId, { groupSystemPrompt: prompt });
+    notifyDbChange("conversations");
+  },
+
+  setModerator: async (conversationId: string, participantId: string | null) => {
+    await updateConversation(conversationId, { moderatorId: participantId ?? undefined });
     notifyDbChange("conversations");
   },
 

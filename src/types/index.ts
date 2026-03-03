@@ -129,6 +129,7 @@ export interface Conversation {
   participants: ConversationParticipant[];
   speakingOrder?: SpeakingOrder;
   groupSystemPrompt?: string;
+  moderatorId?: string;
   lastMessage: string | null;
   lastMessageAt: string | null;
   pinned: boolean;

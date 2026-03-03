@@ -199,6 +199,7 @@ function rowToConversation(row: any): Conversation {
     updatedAt: row.updatedAt,
     workspaceDir: row.workspaceDir ?? undefined,
     groupSystemPrompt: row.groupSystemPrompt ?? undefined,
+    moderatorId: row.moderatorId ?? undefined,
   };
 }
 
@@ -277,6 +278,12 @@ export async function initDatabase(): Promise<void> {
   } catch {
     /* column already exists */
   }
+  // Migration: add moderatorId column
+  try {
+    await db.execute(`ALTER TABLE conversations ADD COLUMN moderatorId TEXT`);
+  } catch {
+    /* column already exists */
+  }
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -332,8 +339,8 @@ export async function initDatabase(): Promise<void> {
 export async function insertConversation(conv: Conversation): Promise<void> {
   const db = await getDb();
   await db.execute(
-    `INSERT INTO conversations (id, type, title, participants, speakingOrder, lastMessage, lastMessageAt, pinned, createdAt, updatedAt, workspaceDir, groupSystemPrompt)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    `INSERT INTO conversations (id, type, title, participants, speakingOrder, lastMessage, lastMessageAt, pinned, createdAt, updatedAt, workspaceDir, groupSystemPrompt, moderatorId)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       conv.id,
       conv.type,
@@ -347,6 +354,7 @@ export async function insertConversation(conv: Conversation): Promise<void> {
       conv.updatedAt,
       conv.workspaceDir ?? null,
       conv.groupSystemPrompt ?? null,
+      conv.moderatorId ?? null,
     ],
   );
 }
@@ -403,6 +411,11 @@ export async function updateConversation(
   if (updates.groupSystemPrompt !== undefined) {
     sets.push(`groupSystemPrompt = $${idx}`);
     params.push(updates.groupSystemPrompt || null);
+    idx++;
+  }
+  if (updates.moderatorId !== undefined) {
+    sets.push(`moderatorId = $${idx}`);
+    params.push(updates.moderatorId || null);
     idx++;
   }
 

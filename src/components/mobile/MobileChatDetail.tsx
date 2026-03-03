@@ -541,6 +541,13 @@ export function MobileChatDetail({
               });
               if (ok) removeParticipant(conversationId, pid);
             }}
+            moderatorId={conv.moderatorId}
+            onToggleModerator={(pid: string) => {
+              useChatStore.getState().setModerator(
+                conversationId,
+                conv.moderatorId === pid ? null : pid,
+              );
+            }}
           />
           <button
             className="mt-1 mb-1 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 active:opacity-60"
