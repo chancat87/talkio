@@ -33,35 +33,6 @@ import { appFetch } from "../lib/http";
 import { compressIfNeeded, getManualSummary } from "../lib/context-compression";
 
 const MAX_HISTORY = 200;
-const ASK_PARTICIPANT_TOOL_NAME = "ask_participant";
-
-/** Build the ask_participant tool definition for a moderator */
-function buildAskParticipantToolDef(conv: Conversation, moderatorId: string) {
-  const others = conv.participants
-    .filter((p) => p.id !== moderatorId)
-    .map((p) => getParticipantLabel(p, conv.participants));
-  return {
-    type: "function" as const,
-    function: {
-      name: ASK_PARTICIPANT_TOOL_NAME,
-      description: `Invite a participant to speak. Available participants: ${others.join(", ")}. The participant will see the full conversation history and your question, then respond. Use this to orchestrate the discussion.`,
-      parameters: {
-        type: "object",
-        properties: {
-          participant_name: {
-            type: "string",
-            description: `Name of the participant to ask. Must be one of: ${others.join(", ")}`,
-          },
-          message: {
-            type: "string",
-            description: "The question or instruction for the participant",
-          },
-        },
-        required: ["participant_name"],
-      },
-    },
-  };
-}
 
 // ── Types ──
 
@@ -300,7 +271,6 @@ async function runToolCallLoop(
   allowedBuiltInToolNames: Set<string> | null,
   allowedServerIds: string[] | undefined,
   tokenUsage: { inputTokens: number; outputTokens: number } | null,
-  askParticipantHandler?: (name: string, message: string) => Promise<string>,
 ): Promise<{ content: string; tokenUsage: { inputTokens: number; outputTokens: number } | null }> {
   // Save initial tool calls
   await updateMessage(assistantMsgId, {
@@ -311,15 +281,9 @@ async function runToolCallLoop(
   });
   notifyDbChange("messages", ctx.cid);
 
-  // Helper: execute tool with ask_participant interception
-  const execTool = async (tc: { id: string; name: string; arguments: string }) => {
-    if (tc.name === ASK_PARTICIPANT_TOOL_NAME && askParticipantHandler) {
-      const args = parseToolArgs(tc.arguments);
-      const name = (args.participant_name as string) || "";
-      const msg = (args.message as string) || "";
-      const response = await askParticipantHandler(name, msg);
-      return response;
-    }
+  // Execute initial tool calls
+  const toolResults: { toolCallId: string; content: string }[] = [];
+  for (const tc of acc.pendingToolCalls) {
     const result = await executeOneTool(
       tc.name,
       parseToolArgs(tc.arguments),
@@ -328,14 +292,7 @@ async function runToolCallLoop(
       allowedBuiltInToolNames,
       allowedServerIds,
     );
-    return result.content;
-  };
-
-  // Execute initial tool calls
-  const toolResults: { toolCallId: string; content: string }[] = [];
-  for (const tc of acc.pendingToolCalls) {
-    const content = await execTool(tc);
-    toolResults.push({ toolCallId: tc.id, content });
+    toolResults.push({ toolCallId: tc.id, content: result.content });
   }
   await updateMessage(assistantMsgId, { toolResults });
   notifyDbChange("messages", ctx.cid);
@@ -431,8 +388,15 @@ async function runToolCallLoop(
 
     const newResults: { toolCallId: string; content: string }[] = [];
     for (const tc of newToolCalls) {
-      const content = await execTool(tc);
-      newResults.push({ toolCallId: tc.id, content });
+      const result = await executeOneTool(
+        tc.name,
+        parseToolArgs(tc.arguments),
+        builtInEnabledByName,
+        identity,
+        allowedBuiltInToolNames,
+        allowedServerIds,
+      );
+      newResults.push({ toolCallId: tc.id, content: result.content });
     }
     await updateMessage(assistantMsgId, { toolResults: [...currentToolResults, ...newResults] });
     notifyDbChange("messages", ctx.cid);
@@ -576,12 +540,6 @@ export async function generateForParticipant(
   })();
   const toolDefs = [...builtInToolDefs, ...getMcpToolDefsForIdentity(identity)];
 
-  // Inject ask_participant tool for the moderator
-  const isModerator = ctx.conversation.moderatorId === participant.id;
-  if (isModerator && ctx.conversation.type === "group") {
-    toolDefs.push(buildAskParticipantToolDef(ctx.conversation, participant.id));
-  }
-
   try {
     // Build API messages with compression
     const allMessages = await getRecentMessages(ctx.cid, ctx.activeBranchId, MAX_HISTORY);
@@ -650,21 +608,6 @@ export async function generateForParticipant(
       : null;
     let lastContent = acc.fullContent;
 
-    // Build ask_participant handler for moderator
-    let askCounter = 0;
-    const askParticipantHandler = isModerator
-      ? async (participantName: string, message: string): Promise<string> => {
-          const target = ctx.conversation.participants.find(
-            (p) => getParticipantLabel(p, ctx.conversation.participants) === participantName,
-          );
-          if (!target) return `Participant "${participantName}" not found.`;
-          if (target.id === participant.id) return "You cannot ask yourself.";
-          askCounter++;
-          const response = await generateForParticipant(ctx, target, askCounter);
-          return response || "(no response)";
-        }
-      : undefined;
-
     // Tool calls → multi-round loop
     if (acc.pendingToolCalls.length > 0) {
       const result = await runToolCallLoop(
@@ -683,7 +626,6 @@ export async function generateForParticipant(
         allowedBuiltInToolNames,
         allowedServerIds,
         tokenUsage,
-        askParticipantHandler,
       );
       lastContent = result.content;
     } else {

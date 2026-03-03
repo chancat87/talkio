@@ -99,9 +99,10 @@ export function buildGroupRoster(conv: Conversation, selfParticipantId: string |
       baseRules.push(
         "",
         `You are the MODERATOR of this discussion.`,
-        `Use the ask_participant tool to invite specific participants to speak.`,
+        `To invite a participant to speak, mention them with @Name (e.g. @${conv.participants.find((p) => p.id !== selfParticipantId) ? getParticipantLabel(conv.participants.find((p) => p.id !== selfParticipantId)!, conv.participants) : "ParticipantName"}).`,
+        `Mentioned participants will automatically respond after you.`,
         `You control the flow: decide who speaks, when, and on what topic.`,
-        `When the discussion is complete, give your final summary without calling ask_participant.`,
+        `When the discussion is complete, give your final summary without mentioning anyone.`,
       );
     } else {
       baseRules.push(

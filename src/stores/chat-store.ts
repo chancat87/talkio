@@ -10,6 +10,7 @@ import {
   resolveTargetParticipants,
   createUserMessage,
   buildApiMessagesForParticipant,
+  extractMentionedParticipants,
 } from "./chat-message-builder";
 import {
   insertConversation,
@@ -252,11 +253,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     _abortControllers.set(cid, abortController);
     if (cid === get().currentConversationId) set({ isGenerating: true });
 
-    // In moderated mode, only the moderator responds; otherwise use normal target resolution
-    const moderator = conv.moderatorId
-      ? conv.participants.find((p) => p.id === conv.moderatorId)
-      : null;
-    const targets = moderator ? [moderator] : resolveTargetParticipants(conv, options?.mentionedParticipantIds);
+    const targets = resolveTargetParticipants(conv, options?.mentionedParticipantIds);
 
     // Pre-compute compression summary once for group chats
     const cachedCompressionSummary = await preComputeCompression(
@@ -284,15 +281,47 @@ export const useChatStore = create<ChatState>((set, get) => ({
       setStoreState: (partial: { streamingMessages: StreamingState[] }) => set(partial),
     };
 
+    const MAX_MODERATOR_ROUNDS = 5;
     try {
+      // Initial round: all targets reply normally
+      const responses: { participantId: string; content: string }[] = [];
       if (conv.speakingOrder === "parallel" && targets.length > 1) {
-        await Promise.all(
+        const results = await Promise.all(
           targets.map((target, i) => generateForParticipant(ctx, target, i)),
         );
+        targets.forEach((t, i) => responses.push({ participantId: t.id, content: results[i] }));
       } else {
         for (let i = 0; i < targets.length; i++) {
           if (abortController.signal.aborted) break;
-          await generateForParticipant(ctx, targets[i], i);
+          const content = await generateForParticipant(ctx, targets[i], i);
+          responses.push({ participantId: targets[i].id, content });
+        }
+      }
+
+      // Moderator @mention loop: if moderator @mentioned others, trigger them then let moderator respond again
+      const moderator = conv.moderatorId
+        ? conv.participants.find((p) => p.id === conv.moderatorId)
+        : null;
+      if (moderator && conv.type === "group") {
+        let moderatorResponse = responses.find((r) => r.participantId === moderator.id)?.content ?? "";
+        let genCounter = targets.length;
+        for (let round = 0; round < MAX_MODERATOR_ROUNDS; round++) {
+          if (abortController.signal.aborted || !moderatorResponse) break;
+          const mentionedIds = extractMentionedParticipants(moderatorResponse, conv, moderator.id);
+          if (mentionedIds.length === 0) break;
+
+          // Trigger mentioned participants
+          const mentioned = conv.participants.filter((p) => mentionedIds.includes(p.id));
+          for (const m of mentioned) {
+            if (abortController.signal.aborted) break;
+            genCounter++;
+            await generateForParticipant(ctx, m, genCounter);
+          }
+          if (abortController.signal.aborted) break;
+
+          // Let moderator respond again after seeing the replies
+          genCounter++;
+          moderatorResponse = await generateForParticipant(ctx, moderator, genCounter);
         }
       }
     } finally {

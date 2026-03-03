@@ -458,8 +458,7 @@ export function MobileChatDetail({
           className="flex-shrink-0 border-b px-4 py-2"
           style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
-          {/* Speaking order toggle — hidden when moderator is set */}
-          {!conv.moderatorId && (
+          {/* Speaking order toggle */}
           <div
             className="mb-2 flex items-center gap-2 pb-2"
             style={{ borderBottom: "0.5px solid var(--border)" }}
@@ -512,7 +511,6 @@ export function MobileChatDetail({
               {t("chat.parallel")}
             </button>
           </div>
-          )}
           {/* Group system prompt */}
           <div className="border-border mb-2 border-b pb-2">
             <MentionTextarea
