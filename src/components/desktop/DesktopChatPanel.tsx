@@ -148,13 +148,10 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
     setShowParticipants,
     showModelPicker,
     setShowModelPicker,
-    setModelPickerMode,
     isExporting,
     setIsExporting,
     handleModelPickerSelect,
-    handleMultiModelSelect,
     handleAddMembers,
-    modelPickerMode,
     showAddMemberPicker,
     setShowAddMemberPicker,
   } = useChatPanelState(conversationId);
@@ -369,12 +366,7 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[160px]">
-            <DropdownMenuItem
-              onClick={() => {
-                setModelPickerMode("add");
-                setShowModelPicker(true);
-              }}
-            >
+            <DropdownMenuItem onClick={() => setShowAddMemberPicker(true)}>
               <UserPlus size={14} className="mr-2" />
               {t("chat.addMember")}
             </DropdownMenuItem>
@@ -611,8 +603,6 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
         open={showModelPicker}
         onClose={() => setShowModelPicker(false)}
         onSelect={handleModelPickerSelect}
-        multiSelect={modelPickerMode === "add"}
-        onMultiSelect={handleMultiModelSelect}
       />
 
       <AddMemberPicker
@@ -635,10 +625,7 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
             modelName={!isGroup ? model?.displayName : undefined}
             onSwitchModel={
               !isGroup
-                ? () => {
-                    setModelPickerMode("switch");
-                    setShowModelPicker(true);
-                  }
+                ? () => setShowModelPicker(true)
                 : undefined
             }
             isGroup={isGroup}
