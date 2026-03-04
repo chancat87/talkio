@@ -37,10 +37,8 @@ import { MessageContent } from "./MessageContent";
 import { ChatInput } from "./ChatInput";
 import { useChatStore, type ChatState } from "../../stores/chat-store";
 import { useMessages, useConversation } from "../../hooks/useDatabase";
-import { useProviderStore } from "../../stores/provider-store";
 import type { Message, ConversationParticipant } from "../../types";
 import { MessageStatus } from "../../types";
-import { generateSuggestQuestions } from "../../services/suggest-questions";
 import { parseFile, type ParsedFile } from "../../lib/file-parser";
 import { getAvatarProps } from "../../lib/avatar-utils";
 import { useConfirm } from "./ConfirmDialogProvider";
@@ -300,48 +298,6 @@ export function ChatView({
     [isMobile],
   );
 
-  // ── Suggest questions ──
-  const [suggestQuestions, setSuggestQuestions] = useState<string[]>([]);
-  const suggestRequestIdRef = useRef("");
-  const getProviderById = useProviderStore((s) => s.getProviderById);
-  const getModelById = useProviderStore((s) => s.getModelById);
-
-  useEffect(() => {
-    if (isGenerating || isGroup || !displayMessages.length) return;
-    const last = displayMessages[displayMessages.length - 1];
-    if (last.role !== "assistant" || !last.content || last.status === MessageStatus.STREAMING)
-      return;
-    // Only generate once per message
-    if (suggestRequestIdRef.current === last.id) return;
-    suggestRequestIdRef.current = last.id;
-    setSuggestQuestions([]);
-
-    // Find the participant's provider + model
-    const participant = participants[0];
-    if (!participant) return;
-    const model = getModelById(participant.modelId);
-    if (!model) return;
-    const provider = getProviderById(model.providerId);
-    if (!provider) return;
-
-    const context = displayMessages
-      .slice(-6)
-      .map((m) => ({ role: m.role, content: m.content || "" }));
-    generateSuggestQuestions(context, provider, model.modelId, i18n.language)
-      .then((qs) => {
-        if (qs.length > 0) setSuggestQuestions(qs);
-      })
-      .catch(() => {});
-  }, [
-    isGenerating,
-    displayMessages,
-    isGroup,
-    participants,
-    getModelById,
-    getProviderById,
-    i18n.language,
-  ]);
-
   // ── Auto-write files from AI responses ──
   const conversation = useConversation(conversationId);
   const workspaceDir = conversation?.workspaceDir || "";
@@ -468,29 +424,6 @@ export function ChatView({
               writtenFiles={writtenFilesMap[msg.id]}
             />
           ))}
-
-          {/* Suggest questions — aligned with AI bubble */}
-          {suggestQuestions.length > 0 && !isGenerating && (
-            <div className="flex flex-wrap gap-1.5 px-4 pt-1 pb-4">
-              {suggestQuestions.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSuggestQuestions([]);
-                    handleSend(q);
-                  }}
-                  className="rounded-xl px-3 py-1.5 text-left text-[13px] transition-opacity active:opacity-70"
-                  style={{
-                    backgroundColor: "var(--muted)",
-                    color: "var(--foreground)",
-                    border: "0.5px solid var(--border)",
-                  }}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
