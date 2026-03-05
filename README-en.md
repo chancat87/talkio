@@ -30,25 +30,43 @@ Talkio is not just another ChatGPT client — you can pull multiple AI models in
 
 ## Screenshots
 
+### Desktop
+
 <p align="center">
-  <img src="docs/screenshots/chat-list.jpg" width="180" alt="Chat List" />
-  <img src="docs/screenshots/group-chat.jpg" width="180" alt="Group Chat" />
-  <img src="docs/screenshots/personas.jpg" width="180" alt="Personas" />
-  <img src="docs/screenshots/models.jpg" width="180" alt="Models" />
-  <img src="docs/screenshots/settings.jpg" width="180" alt="Settings" />
+  <img src="docs/screenshots/desktop-main.png" width="720" alt="Desktop Main Interface" />
+</p>
+
+### Mobile
+
+<p align="center">
+  <img src="docs/screenshots/mobile-conversations.jpg" width="180" alt="Conversation List" />
+  <img src="docs/screenshots/mobile-chat.jpg" width="180" alt="Single Chat" />
+  <img src="docs/screenshots/mobile-group-chat.jpg" width="180" alt="Group Chat" />
+  <img src="docs/screenshots/mobile-auto-discuss.jpg" width="180" alt="Auto Discussion" />
 </p>
 
 <p align="center">
-  <em>Chat List · Multi-AI Group Chat · Personas · Model Browser · Settings</em>
+  <em>Conversation List · AI Single Chat · Multi-AI Group Chat · Auto Discussion (Idiom Chain)</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/html-preview-streaming.jpg" width="180" alt="HTML Streaming Card" />
-  <img src="docs/screenshots/html-preview-rendered.jpg" width="180" alt="HTML Preview" />
+  <img src="docs/screenshots/mobile-mermaid.jpg" width="180" alt="Mermaid Diagram" />
+  <img src="docs/screenshots/mobile-html-preview.jpg" width="180" alt="HTML Preview" />
+  <img src="docs/screenshots/mobile-models.jpg" width="180" alt="Model List" />
+  <img src="docs/screenshots/mobile-identities.jpg" width="180" alt="Personas" />
 </p>
 
 <p align="center">
-  <em>HTML Live Streaming Card · HTML Rendered Preview</em>
+  <em>Mermaid Diagram Rendering · HTML/Three.js Preview · Model Browser · Personas</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/mobile-settings.jpg" width="180" alt="Settings" />
+  <img src="docs/screenshots/mobile-provider.jpg" width="180" alt="Provider Config" />
+</p>
+
+<p align="center">
+  <em>Settings · Provider Configuration & Model Management</em>
 </p>
 
 ---
@@ -59,7 +77,7 @@ Talkio is not just another ChatGPT client — you can pull multiple AI models in
 
 Unlike traditional one-on-one chat, Talkio supports **multi-model group chat**:
 
-- Pull GPT-4o, Claude, DeepSeek into the same conversation
+- Bring different AI models into the same conversation — they have different ways of thinking and perspectives
 - Each participant can have a different **Persona** with its own system prompt and parameters
 - AIs see each other's messages, think independently, and won't simply agree
 - Use **@mentions** to direct a specific model, or let everyone take turns
@@ -186,10 +204,12 @@ talkio/
 
 ## Why Migrate from React Native to Tauri
 
-Talkio v1 was built with Expo + React Native. v2 migrated to Tauri for two main reasons:
+Talkio v1 was built with Expo + React Native. v2 migrated to Tauri 2 for the following reasons:
 
-1. **Chat performance** — React Native's bridge mechanism created noticeable performance bottlenecks in long conversations, streaming rendering, and large message lists. Tauri uses a native WebView, running standard web technologies (React + DOM) directly, making streaming output and complex Markdown/Mermaid/KaTeX rendering much smoother.
-2. **Desktop support** — The project goal expanded from mobile to desktop. Tauri natively supports Windows / macOS / Linux with small bundle sizes and strong system integration, lighter than Electron.
+1. **Chat Rendering Performance** — React Native's bridge mechanism created noticeable performance bottlenecks in long conversations, streaming rendering, and large message lists. Tauri uses a native WebView, running standard web technologies (React + DOM) directly in the frontend, making streaming output and complex Markdown/Mermaid/KaTeX rendering much smoother.
+2. **Full Platform Coverage** — Tauri 2 supports Windows / macOS / Linux desktop platforms, while also supporting mobile via Android WebView. One codebase covers all platforms, eliminating the need to maintain separate React Native and desktop codebases.
+3. **Lighter Weight** — Tauri bundle size is much smaller than Electron (about 20MB vs 100MB+), with lower memory usage and faster startup. It doesn't bundle Chromium, directly using the system WebView instead.
+4. **Rust Ecosystem** — Backend uses Rust, with native support for SQLite, file system, HTTP and other system capabilities. Rich plugin ecosystem (tauri-plugin-sql / tauri-plugin-http / tauri-plugin-dialog, etc.) with better security.
 
 ## License
 
