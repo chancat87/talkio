@@ -24,6 +24,7 @@ import { getAvatarProps } from "../../lib/avatar-utils";
 import { EmptyState } from "../../components/shared/EmptyState";
 import { BUILT_IN_TOOLS } from "../../services/built-in-tools";
 import { ApiClient } from "../../services/api-client";
+import { ModelPicker } from "../../components/shared/ModelPicker";
 
 type IdentityStoreState = ReturnType<typeof useIdentityStore.getState>;
 
@@ -437,7 +438,11 @@ function IdentityForm({
                     className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-white active:opacity-90 disabled:opacity-40"
                     style={{ backgroundColor: "#7c3aed" }}
                   >
-                    <IoSparkles size={14} color="#fff" />
+                    {aiLoading ? (
+                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    ) : (
+                      <IoSparkles size={14} color="#fff" />
+                    )}
                     <span className="text-[13px] font-semibold">{t("identityEdit.generate")}</span>
                   </button>
                 </div>
@@ -638,63 +643,16 @@ function IdentityForm({
         </div>
       </div>
 
-      {/* Model Picker Bottom Sheet */}
-      {showModelPicker && (
-        <div className="fixed inset-0 z-50">
-          <button
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setShowModelPicker(false)}
-            aria-label="Close"
-          />
-          <div
-            className="absolute right-0 bottom-0 left-0 max-h-[50%] overflow-hidden rounded-t-[14px]"
-            style={{ backgroundColor: "var(--background)" }}
-          >
-            <div
-              className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: "0.5px solid var(--border)" }}
-            >
-              <span className="text-foreground text-[17px] font-semibold">
-                {t("identityEdit.selectModel")}
-              </span>
-              <button onClick={() => setShowModelPicker(false)} className="active:opacity-60">
-                <IoCloseCircle size={22} color="var(--muted-foreground)" />
-              </button>
-            </div>
-            <div className="overflow-y-auto">
-              {enabledModels.map((m) => {
-                const active = m.id === aiModelId;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      setAiModelId(m.id);
-                      setShowModelPicker(false);
-                    }}
-                    className="flex w-full items-center px-4 py-3 text-left active:bg-black/5"
-                    style={{ borderBottom: "0.5px solid var(--border)" }}
-                  >
-                    <span
-                      className={`flex-1 text-[15px] ${active ? "font-semibold" : "font-normal"}`}
-                      style={{ color: active ? "var(--primary)" : "var(--foreground)" }}
-                    >
-                      {m.displayName}
-                    </span>
-                    {active && (
-                      <span
-                        className="text-[15px] font-semibold"
-                        style={{ color: "var(--primary)" }}
-                      >
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Model Picker */}
+      <ModelPicker
+        open={showModelPicker}
+        onClose={() => setShowModelPicker(false)}
+        onSelect={(modelId) => {
+          setAiModelId(modelId);
+          setShowModelPicker(false);
+        }}
+        selectedModelId={aiModelId}
+      />
     </div>
   );
 }
