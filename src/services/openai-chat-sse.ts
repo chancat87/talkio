@@ -26,15 +26,21 @@ export async function consumeOpenAIChatCompletionsSse(
       const data = trimmed.slice(6);
       if (data === "[DONE]") continue;
 
+      let parsed: any;
       try {
-        const parsed = JSON.parse(data);
-        if (parsed.usage) usage = parsed.usage;
-        const delta = parsed.choices?.[0]?.delta;
-        if (!delta) continue;
-        onDelta(delta);
+        parsed = JSON.parse(data);
       } catch {
-        // ignore
+        continue; // ignore malformed JSON
       }
+      // Detect API-level errors embedded in SSE stream
+      if (parsed.error) {
+        const errMsg = parsed.error.message || parsed.error.code || JSON.stringify(parsed.error);
+        throw new Error(errMsg);
+      }
+      if (parsed.usage) usage = parsed.usage;
+      const delta = parsed.choices?.[0]?.delta;
+      if (!delta) continue;
+      onDelta(delta);
     }
   }
 

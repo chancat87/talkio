@@ -257,6 +257,13 @@ export async function generateForParticipant(
         tokenUsage,
       );
       lastContent = result.content;
+    } else if (!acc.fullContent && !acc.fullReasoning) {
+      // API returned 200 but produced no content — treat as error
+      await updateMessage(assistantMsgId, {
+        isStreaming: false,
+        status: MessageStatus.ERROR,
+        errorMessage: "Model returned an empty response. It may be unavailable, overloaded, or the model ID may be incorrect.",
+      });
     } else {
       await updateMessage(assistantMsgId, {
         content: acc.fullContent,

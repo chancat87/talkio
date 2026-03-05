@@ -69,6 +69,12 @@ export async function consumeOpenAIResponsesSse(
         continue;
       }
 
+      // Detect API-level errors embedded in SSE stream
+      if (parsed.error) {
+        const errMsg = parsed.error.message || parsed.error.code || JSON.stringify(parsed.error);
+        throw new Error(errMsg);
+      }
+
       switch (currentEvent) {
         case "response.output_text.delta": {
           const delta = parsed.delta;

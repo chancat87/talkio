@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Bot, User, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ReasoningBlock } from "./ReasoningBlock";
 import type { Message, MessageBlock } from "../../types";
@@ -16,8 +16,6 @@ export const MessageContent = memo(function MessageContent({
   blocks = [],
   isStreaming = false,
 }: MessageContentProps) {
-  const isUser = message.role === "user";
-  const isTool = message.role === "tool";
   const streaming = isStreaming || message.status === MessageStatus.STREAMING;
   const hasError = message.status === MessageStatus.ERROR;
 
@@ -60,6 +58,14 @@ export const MessageContent = memo(function MessageContent({
         <div className="text-muted-foreground flex items-center gap-2">
           <Loader2 size={14} className="animate-spin" />
           <span className="text-xs">Generating...</span>
+        </div>
+      )}
+
+      {/* Fallback for empty non-streaming, non-error messages (e.g. legacy data) */}
+      {!streaming && !hasError && !message.content && !message.reasoningContent && (
+        <div className="text-muted-foreground flex items-center gap-2 text-xs">
+          <AlertCircle size={14} className="flex-shrink-0 opacity-60" />
+          <span>Empty response from model</span>
         </div>
       )}
     </div>
