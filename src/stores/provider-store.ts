@@ -6,9 +6,12 @@ import { create } from "zustand";
 import type { Provider, Model, ModelCapabilities } from "../types";
 import { kvStore } from "../storage/kv-store";
 import { generateId } from "../lib/id";
-import { buildProviderHeaders } from "../services/provider-headers";
-import { appFetch } from "../lib/http";
-import { getAdapter } from "../services/provider-adapters";
+import {
+  createModelFromProviderPayload,
+  fetchProviderModels,
+  probeProviderModelCapabilities,
+  testProviderConnection,
+} from "../services/provider-service";
 
 const PROVIDERS_KEY = "providers";
 const MODELS_KEY = "models";
@@ -199,49 +202,25 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     const provider = get().providers.find((p) => p.id === providerId);
     if (!provider) return [];
 
-    const baseUrl = provider.baseUrl.replace(/\/+$/, "");
+    const modelList = await fetchProviderModels(provider);
 
-    const headers = buildProviderHeaders(provider);
-
-    const res = await appFetch(`${baseUrl}/models`, {
-      headers,
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
-
-    const json = await res.json();
-    const modelList: any[] = json.data ?? json ?? [];
-
-    // Remove existing models for this provider
     const existingOther = get().models.filter((m) => m.providerId !== providerId);
     const existingForProvider = get().models.filter((m) => m.providerId === providerId);
 
     const newModels: Model[] = modelList.map((m: any) => {
       const existing = existingForProvider.find((e) => e.modelId === m.id);
-      if (existing) return existing;
-      return {
-        id: generateId(),
+      return createModelFromProviderPayload(
+        existing?.id ?? generateId(),
         providerId,
-        modelId: m.id,
-        displayName: m.id,
-        avatar: null,
-        enabled: true,
-        capabilities: {
-          vision: false,
-          toolCall: false,
-          reasoning: false,
-          streaming: true,
-        },
-        capabilitiesVerified: false,
-        maxContextLength: m.context_length ?? 128000,
-      } as Model;
+        m.id,
+        existing,
+        m.context_length ?? 128000,
+      );
     });
 
     const allModels = [...existingOther, ...newModels];
     set({ models: allModels });
     persistModels(allModels);
-
-    // Update provider status
     get().updateProvider(providerId, { status: "connected" });
 
     return newModels;
@@ -251,14 +230,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     const provider = get().providers.find((p) => p.id === providerId);
     if (!provider) return false;
 
-    const baseUrl = provider.baseUrl.replace(/\/+$/, "");
-
     try {
-      const res = await appFetch(`${baseUrl}/models`, {
-        headers: buildProviderHeaders(provider),
-        signal: AbortSignal.timeout(10000),
-      });
-      const ok = res.ok;
+      const ok = await testProviderConnection(provider);
       get().updateProvider(providerId, { status: ok ? "connected" : "error" });
       return ok;
     } catch {
@@ -273,11 +246,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     const provider = get().getProviderById(model.providerId);
     if (!provider) throw new Error("Provider not found");
 
-    const baseUrl = provider.baseUrl.replace(/\/+$/, "");
-    const headers = buildProviderHeaders(provider, { "Content-Type": "application/json" });
-    const adapter = getAdapter(provider.apiFormat);
-
-    const caps = await adapter.probeCapabilities({ baseUrl, headers, modelId: model.modelId });
+    const caps = await probeProviderModelCapabilities(provider, model.modelId);
     get().updateModelCapabilities(modelId, caps);
   },
 }));
