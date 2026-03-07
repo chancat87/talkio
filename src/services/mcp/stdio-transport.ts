@@ -38,6 +38,8 @@ export class TauriStdioTransport implements Transport {
   public sessionId: string | undefined;
   private invoke: ((cmd: string, args?: Record<string, unknown>) => Promise<unknown>) | undefined;
   private _started = false;
+  private sendChain: Promise<void> = Promise.resolve();
+  private _closed = false;
 
   public onclose?: () => void;
   public onerror?: (error: Error) => void;
@@ -50,7 +52,8 @@ export class TauriStdioTransport implements Transport {
   ) {}
 
   async start(): Promise<void> {
-    if (this._started) throw new Error("Transport already started");
+    if (this._started) return;
+    this._closed = false;
 
     this.invoke = (await getTauriInvoke()) ?? undefined;
     if (!this.invoke) {
@@ -73,36 +76,44 @@ export class TauriStdioTransport implements Transport {
   }
 
   async send(message: JSONRPCMessage): Promise<void> {
-    if (!this.invoke || !this.sessionId) {
-      throw new Error("Transport not started");
-    }
-
-    try {
-      const responseStr = (await this.invoke("mcp_stdio_send", {
-        sessionId: this.sessionId,
-        message: JSON.stringify(message),
-      })) as string;
-
-      if (responseStr && responseStr.trim()) {
-        try {
-          const data = JSON.parse(responseStr);
-          // Could be a single message or an array
-          const msgs = Array.isArray(data)
-            ? data.map((item) => JSONRPCMessageSchema.parse(item))
-            : [JSONRPCMessageSchema.parse(data)];
-          msgs.forEach((m) => this.onmessage?.(m));
-        } catch (parseErr) {
-          this.onerror?.(new Error(`Failed to parse MCP response: ${parseErr}`));
-        }
+    const run = async () => {
+      if (!this.invoke || !this.sessionId || !this._started || this._closed) {
+        throw new Error("Transport not started");
       }
-    } catch (err) {
-      const error = new Error(`MCP stdio send failed: ${err}`);
-      this.onerror?.(error);
-      throw error;
-    }
+
+      try {
+        const responseStr = (await this.invoke("mcp_stdio_send", {
+          sessionId: this.sessionId,
+          message: JSON.stringify(message),
+        })) as string;
+
+        if (responseStr && responseStr.trim()) {
+          try {
+            const data = JSON.parse(responseStr);
+            const msgs = Array.isArray(data)
+              ? data.map((item) => JSONRPCMessageSchema.parse(item))
+              : [JSONRPCMessageSchema.parse(data)];
+            msgs.forEach((m) => this.onmessage?.(m));
+          } catch (parseErr) {
+            this.onerror?.(new Error(`Failed to parse MCP response: ${parseErr}`));
+          }
+        }
+      } catch (err) {
+        const error = new Error(`MCP stdio send failed: ${err}`);
+        this.onerror?.(error);
+        throw error;
+      }
+    };
+
+    const next = this.sendChain.then(run, run);
+    this.sendChain = next.catch(() => {});
+    return next;
   }
 
   async close(): Promise<void> {
+    if (this._closed) return;
+    this._closed = true;
+    await this.sendChain.catch(() => {});
     if (this.invoke && this.sessionId) {
       try {
         await this.invoke("mcp_stdio_stop", { sessionId: this.sessionId });
@@ -113,6 +124,7 @@ export class TauriStdioTransport implements Transport {
     }
     this.sessionId = undefined;
     this._started = false;
+    this.invoke = undefined;
     this.onclose?.();
   }
 }

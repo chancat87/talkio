@@ -34,6 +34,7 @@ function classifyError(err: unknown): McpErrorCode {
 interface ManagedConnection {
   client: Client;
   server: McpServer;
+  serverSignature: string;
   tools: DiscoveredTool[];
   toolsDiscoveredAt: number;
   connected: boolean;
@@ -49,13 +50,31 @@ function buildRequestInit(customHeaders?: CustomHeader[]): RequestInit | undefin
   return { headers };
 }
 
+function getServerSignature(server: McpServer): string {
+  return JSON.stringify({
+    type: server.type ?? "http",
+    url: server.url,
+    headers: server.customHeaders ?? [],
+    command: server.command ?? "",
+    args: server.args ?? [],
+    env: server.env ?? {},
+  });
+}
+
 class McpConnectionManager {
   private connections = new Map<string, ManagedConnection>();
 
   private readonly TOOLS_TTL = 5 * 60 * 1000;
 
   async ensureConnected(server: McpServer): Promise<ManagedConnection> {
-    const existing = this.connections.get(server.id);
+    const nextSignature = getServerSignature(server);
+    let existing = this.connections.get(server.id);
+
+    if (existing && existing.serverSignature !== nextSignature) {
+      this.disconnect(server.id);
+      existing = undefined;
+    }
+
     if (existing?.connected) return existing;
     if (existing?.connecting) {
       await existing.connecting;
@@ -68,6 +87,7 @@ class McpConnectionManager {
     const conn: ManagedConnection = {
       client: null!,
       server,
+      serverSignature: nextSignature,
       tools: [],
       toolsDiscoveredAt: 0,
       connected: false,
@@ -75,9 +95,16 @@ class McpConnectionManager {
     };
     this.connections.set(server.id, conn);
 
-    conn.connecting = this.connect(conn);
+    conn.connecting = this.connect(conn)
+      .catch((err) => {
+        this.connections.delete(server.id);
+        throw err;
+      })
+      .finally(() => {
+        const current = this.connections.get(server.id);
+        if (current) current.connecting = null;
+      });
     await conn.connecting;
-    conn.connecting = null;
     return conn;
   }
 
@@ -198,6 +225,13 @@ class McpConnectionManager {
 
   reset(serverId: string): void {
     this.disconnect(serverId);
+  }
+
+  syncServers(activeServerIds: string[]): void {
+    const active = new Set(activeServerIds);
+    for (const serverId of this.connections.keys()) {
+      if (!active.has(serverId)) this.disconnect(serverId);
+    }
   }
 
   getConnectionStatus(serverId: string): McpConnectionStatus {

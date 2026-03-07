@@ -3,6 +3,7 @@ import { useMcpStore, type McpServerConfig, type McpTool } from "../../stores/mc
 import { mcpConnectionManager } from "./connection-manager";
 
 let refreshPromise: Promise<void> | null = null;
+let refreshGeneration = 0;
 
 function toSharedServer(server: McpServerConfig): McpServer {
   return {
@@ -52,25 +53,28 @@ export function getMcpToolDefsForIdentity(identity?: Identity | null) {
 
 export async function refreshMcpConnections(): Promise<void> {
   if (refreshPromise) return refreshPromise;
-
+  const generation = ++refreshGeneration;
   refreshPromise = (async () => {
     const store = useMcpStore.getState();
-    const servers = store.servers;
+    const servers = [...store.servers];
+    const enabled = servers.filter((server) => server.enabled);
+
+    mcpConnectionManager.syncServers(enabled.map((server) => server.id));
 
     for (const srv of servers) {
-      const status = srv.enabled ? "connecting" : "disconnected";
-      store.setConnectionStatus(srv.id, status);
       if (!srv.enabled) {
-        mcpConnectionManager.reset(srv.id);
+        store.setConnectionStatus(srv.id, "disconnected");
         store.setTools(srv.id, []);
+        continue;
       }
+      store.setConnectionStatus(srv.id, "connecting");
     }
 
-    const enabled = servers.filter((s) => s.enabled);
     await Promise.all(
       enabled.map(async (srv) => {
         try {
           const tools = await mcpConnectionManager.discoverTools(toSharedServer(srv));
+          if (generation !== refreshGeneration) return;
           useMcpStore.getState().setTools(
             srv.id,
             tools.map((t) => ({
@@ -82,6 +86,7 @@ export async function refreshMcpConnections(): Promise<void> {
           );
           useMcpStore.getState().setConnectionStatus(srv.id, "connected");
         } catch {
+          if (generation !== refreshGeneration) return;
           useMcpStore.getState().setConnectionStatus(srv.id, "error");
           useMcpStore.getState().setTools(srv.id, []);
         }
