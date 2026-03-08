@@ -124,8 +124,6 @@
     "applyFiles": "应用生成文件",
     "applyFilesConfirm": "这些文件将写入当前工作目录：",
     "applyFilesSuccess": "已写入 {{count}} 个文件",
-    "analyzeProject": "分析当前项目",
-    "reviewProject": "评审当前项目",
     "applyThisFile": "应用此文件",
     "previewFile": "预览文件",
     "currentFile": "当前文件",

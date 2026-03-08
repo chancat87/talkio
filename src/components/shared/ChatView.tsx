@@ -303,7 +303,7 @@ export function ChatView({
 
   // ── Auto-write files from AI responses ──
   const conversation = useConversation(conversationId);
-  const workspaceDir = conversation?.workspaceDir || "";
+  const workspaceDir = !isMobile ? conversation?.workspaceDir || "" : "";
   const [writtenFilesMap, setWrittenFilesMap] = useState<Record<string, WrittenFile[]>>({});
   const [pendingFileBlocksMap, setPendingFileBlocksMap] = useState<
     Record<string, { path: string; content: string }[]>
@@ -482,9 +482,9 @@ export function ChatView({
               onEdit={msg.role === "user" ? handleEdit : undefined}
               isGenerating={isGenerating}
               writtenFiles={writtenFilesMap[msg.id]}
-              pendingFileBlocks={pendingFileBlocksMap[msg.id]}
-              pendingFileStatuses={pendingFileStatusMap[msg.id]}
-              onApplyFileBlocks={handleApplyFileBlocks}
+              pendingFileBlocks={!isMobile ? pendingFileBlocksMap[msg.id] : undefined}
+              pendingFileStatuses={!isMobile ? pendingFileStatusMap[msg.id] : undefined}
+              onApplyFileBlocks={!isMobile ? handleApplyFileBlocks : undefined}
             />
           ))}
         </div>

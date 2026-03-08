@@ -124,8 +124,6 @@
     "applyFiles": "Apply generated files",
     "applyFilesConfirm": "These files will be written into the current workspace directory:",
     "applyFilesSuccess": "Wrote {{count}} files",
-    "analyzeProject": "Analyze Current Project",
-    "reviewProject": "Review Current Project",
     "applyThisFile": "Apply This File",
     "previewFile": "Preview File",
     "currentFile": "Current File",
