@@ -123,7 +123,9 @@
     "removeWorkspaceConfirm": "After removing it, this conversation will no longer be linked to a local project directory.",
     "applyFiles": "Apply generated files",
     "applyFilesConfirm": "These files will be written into the current workspace directory:",
-    "applyFilesSuccess": "Wrote {{count}} files"
+    "applyFilesSuccess": "Wrote {{count}} files",
+    "analyzeProject": "Analyze Current Project",
+    "reviewProject": "Review Current Project"
   },
   "models": {
     "title": "Models",

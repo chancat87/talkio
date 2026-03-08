@@ -18,6 +18,8 @@ import {
   Plus,
   Minimize2,
   FolderOpen,
+  Search,
+  FileSearch,
 } from "lucide-react";
 import {
   DndContext,
@@ -157,6 +159,7 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
     setShowAddMemberPicker,
   } = useChatPanelState(conversationId);
   const renameConversation = useChatStore((s) => s.renameConversation);
+  const sendMessage = useChatStore((s) => s.sendMessage);
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
@@ -266,6 +269,20 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
     await updateConversation(conversationId, { workspaceDir: "" });
     notifyDbChange("conversations");
   }, [confirm, conversationId, t]);
+
+  const handleAnalyzeProject = useCallback(() => {
+    if (!conv?.workspaceDir) return;
+    sendMessage(
+      "请基于当前已打开的项目，先阅读项目结构和关键文件，然后给我一份简洁但具体的项目分析：\n1. 这是个什么项目\n2. 核心技术栈\n3. 主要目录职责\n4. 关键入口文件\n5. 当前代码结构的优点与风险\n6. 接下来最值得做的 3 件事\n如果某些关键文件还没加载，请明确说出还需要哪些相对路径文件。",
+    );
+  }, [conv?.workspaceDir, sendMessage]);
+
+  const handleReviewProject = useCallback(() => {
+    if (!conv?.workspaceDir) return;
+    sendMessage(
+      "请对当前已打开的项目做一次代码评审，重点关注：\n1. 架构设计\n2. 可维护性\n3. 性能风险\n4. 安全或误操作风险\n5. 用户体验缺口\n6. 按 P0 / P1 / P2 输出改进建议\n请基于你实际看到的目录和文件内容回答；如果还缺关键文件，请直接列出相对路径。",
+    );
+  }, [conv?.workspaceDir, sendMessage]);
 
   return (
     <div className="flex h-full flex-col">
@@ -428,10 +445,20 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
                   {conv?.workspaceDir ? t("settings.changeDir") : t("settings.workspaceDir")}
                 </DropdownMenuItem>
                 {conv?.workspaceDir && (
-                  <DropdownMenuItem onClick={handleClearWorkspace}>
-                    <Trash2 size={14} className="mr-2" />
-                    {t("chat.removeWorkspace")}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={handleAnalyzeProject}>
+                      <Search size={14} className="mr-2" />
+                      {t("chat.analyzeProject")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleReviewProject}>
+                      <FileSearch size={14} className="mr-2" />
+                      {t("chat.reviewProject")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleClearWorkspace}>
+                      <Trash2 size={14} className="mr-2" />
+                      {t("chat.removeWorkspace")}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </>
             )}

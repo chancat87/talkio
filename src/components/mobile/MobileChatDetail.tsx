@@ -15,7 +15,7 @@ import {
   IoPersonAddOutline,
   IoEllipsisHorizontal,
 } from "../../icons";
-import { ArrowUpDown, Shuffle, Layers } from "lucide-react";
+import { ArrowUpDown, Shuffle, Layers, Search, FileSearch } from "lucide-react";
 import { ChatView, type ChatViewHandle } from "../shared/ChatView";
 import { MentionTextarea } from "../shared/MentionTextarea";
 import { ModelPicker } from "../shared/ModelPicker";
@@ -72,6 +72,7 @@ export function MobileChatDetail({
   } = useChatPanelState(conversationId);
 
   const renameConversation = useChatStore((s) => s.renameConversation);
+  const sendMessage = useChatStore((s) => s.sendMessage);
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -210,6 +211,22 @@ export function MobileChatDetail({
       setIsExporting(false);
     }
   }, [conv, messages, isExporting, t]);
+
+  const handleAnalyzeProject = useCallback(() => {
+    if (!conv?.workspaceDir) return;
+    setShowMoreMenu(false);
+    sendMessage(
+      "请基于当前已打开的项目，先阅读项目结构和关键文件，然后给我一份简洁但具体的项目分析：\n1. 这是个什么项目\n2. 核心技术栈\n3. 主要目录职责\n4. 关键入口文件\n5. 当前代码结构的优点与风险\n6. 接下来最值得做的 3 件事\n如果某些关键文件还没加载，请明确说出还需要哪些相对路径文件。",
+    );
+  }, [conv?.workspaceDir, sendMessage]);
+
+  const handleReviewProject = useCallback(() => {
+    if (!conv?.workspaceDir) return;
+    setShowMoreMenu(false);
+    sendMessage(
+      "请对当前已打开的项目做一次代码评审，重点关注：\n1. 架构设计\n2. 可维护性\n3. 性能风险\n4. 安全或误操作风险\n5. 用户体验缺口\n6. 按 P0 / P1 / P2 输出改进建议\n请基于你实际看到的目录和文件内容回答；如果还缺关键文件，请直接列出相对路径。",
+    );
+  }, [conv?.workspaceDir, sendMessage]);
 
   return (
     <div
@@ -394,6 +411,24 @@ export function MobileChatDetail({
                   <IoShareOutline size={18} color="var(--foreground)" />
                   <span className="text-foreground text-[14px]">{t("chat.export")}</span>
                 </button>
+                {conv?.workspaceDir && (
+                  <>
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3 active:opacity-60"
+                      onClick={handleAnalyzeProject}
+                    >
+                      <Search size={18} color="var(--foreground)" />
+                      <span className="text-foreground text-[14px]">{t("chat.analyzeProject")}</span>
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3 active:opacity-60"
+                      onClick={handleReviewProject}
+                    >
+                      <FileSearch size={18} color="var(--foreground)" />
+                      <span className="text-foreground text-[14px]">{t("chat.reviewProject")}</span>
+                    </button>
+                  </>
+                )}
                 <button
                   className="flex w-full items-center gap-3 px-4 py-3 active:opacity-60"
                   style={{ opacity: messages.length < 4 || isCompressing ? 0.4 : 1 }}
