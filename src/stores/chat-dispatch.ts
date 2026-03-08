@@ -20,6 +20,7 @@ import { generateForParticipant, type GenerationContext, type StreamingState } f
 import { estimateMessagesTokens, compressIfNeeded } from "../lib/context-compression";
 import { generateId } from "../lib/id";
 import i18n from "../i18n";
+import { buildWorkspaceContextBundle } from "../services/workspace";
 
 const MAX_HISTORY = 200;
 const MAX_MENTION_ROUNDS = 2;
@@ -31,6 +32,7 @@ export async function preComputeCompression(
   userMsg: Message,
   abortController: AbortController,
   activeBranchId: string | null,
+  workspaceContext?: { tree?: string; files: Array<{ path: string; content: string }> },
 ): Promise<string | null> {
   const compressionSettings = useSettingsStore.getState().settings;
   if (!compressionSettings.contextCompressionEnabled || targets.length === 0) return null;
@@ -42,7 +44,10 @@ export async function preComputeCompression(
 
   const allMsgs = await getRecentMessages(cid, activeBranchId, MAX_HISTORY);
   const filtered = allMsgs.filter((message) => message.status === MessageStatus.SUCCESS || message.id === userMsg.id);
-  const sampleApiMessages = buildApiMessagesForParticipant(filtered, targets[0], conversation);
+  const sampleApiMessages = buildApiMessagesForParticipant(filtered, targets[0], conversation, {
+    workspaceTree: workspaceContext?.tree,
+    workspaceFiles: workspaceContext?.files,
+  });
   const tokenCount = estimateMessagesTokens(sampleApiMessages);
   if (tokenCount <= compressionSettings.contextCompressionThreshold) return null;
 
@@ -113,6 +118,9 @@ export async function dispatchMessageGeneration(args: {
   if (cid === getCurrentConversationId()) setStoreState({ isGenerating: true });
 
   const targets = resolveTargetParticipants(conversation, options?.mentionedParticipantIds);
+  const workspaceContext = conversation.workspaceDir
+    ? await buildWorkspaceContextBundle(conversation.workspaceDir, text, { includeTree: true })
+    : { files: [] as Array<{ path: string; content: string }>, tree: undefined };
   const cachedCompressionSummary = await preComputeCompression(
     cid,
     conversation,
@@ -120,6 +128,7 @@ export async function dispatchMessageGeneration(args: {
     userMsg,
     abortController,
     activeBranchId,
+    workspaceContext,
   );
   const compressionSettings = useSettingsStore.getState().settings;
 
@@ -135,6 +144,8 @@ export async function dispatchMessageGeneration(args: {
     streamingMessages,
     getCurrentConversationId,
     setStoreState: (partial) => setStoreState(partial),
+    workspaceTree: workspaceContext.tree,
+    workspaceFiles: workspaceContext.files,
   };
 
   let globalMsgIndex = 0;

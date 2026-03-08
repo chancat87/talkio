@@ -4,6 +4,7 @@ import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
 const DEFAULT_MAX_ENTRIES = 300;
 const DEFAULT_MAX_DEPTH = 3;
 const DEFAULT_MAX_FILE_BYTES = 64 * 1024;
+const DEFAULT_MAX_CONTEXT_FILES = 4;
 
 const IGNORED_DIRS = new Set([
   ".git",
@@ -34,6 +35,30 @@ const PRIORITY_NAMES = [
   "services",
   "stores",
 ];
+
+const DEFAULT_CONTEXT_CANDIDATES = [
+  "README.md",
+  "README",
+  "package.json",
+  "tsconfig.json",
+  "vite.config.ts",
+  "vite.config.js",
+  "src/main.tsx",
+  "src/App.tsx",
+  "src/index.tsx",
+  "src-tauri/Cargo.toml",
+  "src-tauri/src/main.rs",
+];
+
+export interface WorkspaceFileContext {
+  path: string;
+  content: string;
+}
+
+export interface WorkspaceContextBundle {
+  tree?: string;
+  files: WorkspaceFileContext[];
+}
 
 function isTauriEnv(): boolean {
   return !!window.__TAURI_INTERNALS__;
@@ -74,11 +99,19 @@ function joinPath(base: string, name: string): string {
 }
 
 function getRelativePath(root: string, fullPath: string): string {
-  const normalizedRoot = root.replace(/\\/g, "/").replace(/\/+$|\/+$/g, "");
+  const normalizedRoot = root.replace(/\\/g, "/").replace(/\/+$/, "");
   const normalizedFull = fullPath.replace(/\\/g, "/");
   return normalizedFull.startsWith(normalizedRoot + "/")
     ? normalizedFull.slice(normalizedRoot.length + 1)
     : normalizedFull;
+}
+
+export function sanitizeRelativePath(relativePath: string): string | null {
+  let p = relativePath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const parts = p.split("/").filter((part) => part && part !== "." && part !== "..");
+  if (parts.length === 0) return null;
+  if (parts.some((part) => shouldIgnoreName(part))) return null;
+  return parts.join("/");
 }
 
 export async function readWorkspaceTree(
@@ -129,14 +162,6 @@ export async function readWorkspaceTree(
   return lines.join("\n");
 }
 
-function sanitizeRelativePath(relativePath: string): string | null {
-  let p = relativePath.replace(/\\/g, "/").replace(/^\/+/, "");
-  const parts = p.split("/").filter((part) => part && part !== "." && part !== "..");
-  if (parts.length === 0) return null;
-  if (parts.some((part) => shouldIgnoreName(part))) return null;
-  return parts.join("/");
-}
-
 export async function readWorkspaceFile(
   workspaceDir: string,
   relativePath: string,
@@ -153,4 +178,64 @@ export async function readWorkspaceFile(
     throw new Error(`File too large (> ${Math.round(maxBytes / 1024)}KB)`);
   }
   return text;
+}
+
+async function tryReadWorkspaceFile(
+  workspaceDir: string,
+  relativePath: string,
+): Promise<WorkspaceFileContext | null> {
+  try {
+    const safePath = sanitizeRelativePath(relativePath);
+    if (!safePath) return null;
+    const content = await readWorkspaceFile(workspaceDir, safePath);
+    return { path: safePath, content };
+  } catch {
+    return null;
+  }
+}
+
+function extractPathsFromText(text: string): string[] {
+  const matches = text.match(/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)+/g) ?? [];
+  const unique = new Set<string>();
+  for (const match of matches) {
+    const safe = sanitizeRelativePath(match);
+    if (safe) unique.add(safe);
+  }
+  return [...unique];
+}
+
+function shouldIncludeDefaultContext(text: string): boolean {
+  return /项目|project|code review|review|架构|结构|代码|仓库|repo|看看|分析|analy[sz]e/i.test(text);
+}
+
+export async function buildWorkspaceContextBundle(
+  workspaceDir: string,
+  userText: string,
+  options?: { includeTree?: boolean; maxFiles?: number },
+): Promise<WorkspaceContextBundle> {
+  if (!workspaceDir || !isTauriEnv()) return { files: [] };
+
+  const includeTree = options?.includeTree ?? true;
+  const maxFiles = options?.maxFiles ?? DEFAULT_MAX_CONTEXT_FILES;
+  const requestedPaths = extractPathsFromText(userText);
+  const candidatePaths = [...requestedPaths];
+
+  if (shouldIncludeDefaultContext(userText)) {
+    for (const path of DEFAULT_CONTEXT_CANDIDATES) candidatePaths.push(path);
+  }
+
+  const uniqueCandidates = [...new Set(candidatePaths)];
+  const files: WorkspaceFileContext[] = [];
+
+  for (const path of uniqueCandidates) {
+    if (files.length >= maxFiles) break;
+    const file = await tryReadWorkspaceFile(workspaceDir, path);
+    if (file) files.push(file);
+  }
+
+  const tree = includeTree ? await readWorkspaceTree(workspaceDir).catch(() => "") : "";
+  return {
+    tree: tree || undefined,
+    files,
+  };
 }

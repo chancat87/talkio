@@ -113,7 +113,10 @@ export function buildApiMessagesForParticipant(
   allMessages: Message[],
   participant: ConversationParticipant,
   conv: Conversation,
-  options?: { workspaceTree?: string },
+  options?: {
+    workspaceTree?: string;
+    workspaceFiles?: Array<{ path: string; content: string }>;
+  },
 ): Array<{ role: string; content: unknown; tool_calls?: unknown; tool_call_id?: string }> {
   const identity = participant.identityId
     ? useIdentityStore.getState().getIdentityById(participant.identityId)
@@ -126,11 +129,20 @@ export function buildApiMessagesForParticipant(
   const workspaceDir = conv.workspaceDir;
   let workspaceHint = "";
   if (workspaceDir) {
-    workspaceHint = `\n\nThe user has a workspace directory at: ${workspaceDir}\nWhen the user asks you to create or write files, wrap each file in <file path="relative/path.ext">content</file> tags. The path should be relative to the workspace directory. The system will automatically save them.`;
+    workspaceHint = "\n\nThe user attached a local workspace to this conversation.";
+    workspaceHint +=
+      '\nWhen you want to create or write files, wrap each file in <file path="relative/path.ext">content</file> tags. The path must be relative to the workspace root.';
     if (options?.workspaceTree) {
-      workspaceHint += `\n\nCurrent workspace files:\n${options.workspaceTree}`;
+      workspaceHint += `\n\nCurrent workspace tree:\n${options.workspaceTree}`;
     }
-    workspaceHint += `\nIf the user asks to read or modify an existing file, you can reference files by their relative path.`;
+    if (options?.workspaceFiles?.length) {
+      workspaceHint += "\n\nLoaded workspace files:";
+      for (const file of options.workspaceFiles) {
+        workspaceHint += `\n\n--- FILE: ${file.path} ---\n${file.content}`;
+      }
+    }
+    workspaceHint +=
+      "\nUse relative paths when you discuss files. If the user asks about a file that is not loaded yet, say which relative path you need.";
   }
 
   if (isGroup) {

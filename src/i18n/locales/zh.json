@@ -120,7 +120,10 @@
     "deleteConversation": "删除对话",
     "deleteConversationConfirm": "此对话及所有消息将被永久删除。",
     "removeWorkspace": "移除工作目录",
-    "removeWorkspaceConfirm": "移除后，这个对话将不再关联本地项目目录。"
+    "removeWorkspaceConfirm": "移除后，这个对话将不再关联本地项目目录。",
+    "applyFiles": "应用生成文件",
+    "applyFilesConfirm": "这些文件将写入当前工作目录：",
+    "applyFilesSuccess": "已写入 {{count}} 个文件"
   },
   "models": {
     "title": "模型",

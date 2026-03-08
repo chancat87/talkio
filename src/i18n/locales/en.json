@@ -120,7 +120,10 @@
     "deleteConversation": "Delete Conversation",
     "deleteConversationConfirm": "This conversation and all its messages will be permanently deleted.",
     "removeWorkspace": "Remove Workspace Directory",
-    "removeWorkspaceConfirm": "After removing it, this conversation will no longer be linked to a local project directory."
+    "removeWorkspaceConfirm": "After removing it, this conversation will no longer be linked to a local project directory.",
+    "applyFiles": "Apply generated files",
+    "applyFilesConfirm": "These files will be written into the current workspace directory:",
+    "applyFilesSuccess": "Wrote {{count}} files"
   },
   "models": {
     "title": "Models",

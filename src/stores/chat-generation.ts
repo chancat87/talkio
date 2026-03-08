@@ -56,6 +56,8 @@ export interface GenerationContext {
   streamingMessages: Map<string, StreamingState>;
   getCurrentConversationId: () => string | null;
   setStoreState: (partial: { streamingMessages: StreamingState[] }) => void;
+  workspaceTree?: string;
+  workspaceFiles?: Array<{ path: string; content: string }>;
 }
 
 // ── Main generation function ──
@@ -177,21 +179,11 @@ export async function generateForParticipant(
         m.id === ctx.userMsg.id,
     );
 
-    // Read workspace tree if workspace dir is set
-    let workspaceTree: string | undefined;
-    if (ctx.conversation.workspaceDir) {
-      try {
-        const { readWorkspaceTree } = await import("../services/file-writer");
-        workspaceTree = (await readWorkspaceTree(ctx.conversation.workspaceDir)) || undefined;
-      } catch {
-        /* ignore */
-      }
-    }
-
     const adapter = getAdapter(provider.apiFormat);
 
     let apiMessages = buildApiMessagesForParticipant(filtered, participant, ctx.conversation, {
-      workspaceTree,
+      workspaceTree: ctx.workspaceTree,
+      workspaceFiles: ctx.workspaceFiles,
     });
     apiMessages = await applyCompression(apiMessages, ctx, baseUrl, headers, model.modelId, provider.apiFormat);
 
