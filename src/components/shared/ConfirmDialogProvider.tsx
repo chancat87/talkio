@@ -39,13 +39,19 @@ export function useConfirm(): ConfirmApi {
   return ctx;
 }
 
-// ── Global appAlert ──
+// ── Global appAlert / appConfirm ──
 let _globalAlert: ((msg: string) => Promise<void>) | null = null;
+let _globalConfirm: ((options: ConfirmOptions) => Promise<boolean>) | null = null;
 
 export function appAlert(msg: string): Promise<void> {
   if (_globalAlert) return _globalAlert(msg);
   window.alert(msg);
   return Promise.resolve();
+}
+
+export function appConfirm(options: ConfirmOptions): Promise<boolean> {
+  if (_globalConfirm) return _globalConfirm(options);
+  return Promise.resolve(window.confirm(options.description || options.title));
 }
 
 export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
@@ -113,10 +119,12 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     _globalAlert = alert;
+    _globalConfirm = confirm;
     return () => {
       _globalAlert = null;
+      _globalConfirm = null;
     };
-  }, [alert]);
+  }, [alert, confirm]);
 
   const api = useMemo<ConfirmApi>(() => ({ confirm }), [confirm]);
 
