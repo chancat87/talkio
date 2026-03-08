@@ -56,6 +56,7 @@ import { exportConversationAsMarkdown } from "../../services/export";
 import { useConfirm } from "../shared/ConfirmDialogProvider";
 import { updateConversation } from "../../storage/database";
 import { notifyDbChange } from "../../hooks/useDatabase";
+import { getWorkspaceName, pickWorkspaceDir } from "../../services/workspace";
 
 // ── Drag-sortable participant row ──
 
@@ -241,6 +242,31 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
     }
   }, [conv, messages, isCompressing, conversationId, t]);
 
+  const handlePickWorkspace = useCallback(async () => {
+    if (!window.__TAURI_INTERNALS__) return;
+    try {
+      const dir = await pickWorkspaceDir();
+      if (!dir) return;
+      await updateConversation(conversationId, { workspaceDir: dir });
+      notifyDbChange("conversations");
+    } catch (err) {
+      await (
+        await import("../../components/shared/ConfirmDialogProvider")
+      ).appAlert(`${t("common.error")}: ${err instanceof Error ? err.message : "Unknown"}`);
+    }
+  }, [conversationId, t]);
+
+  const handleClearWorkspace = useCallback(async () => {
+    const ok = await confirm({
+      title: t("common.areYouSure"),
+      description: t("chat.removeWorkspaceConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
+    await updateConversation(conversationId, { workspaceDir: "" });
+    notifyDbChange("conversations");
+  }, [confirm, conversationId, t]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -340,25 +366,32 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
             <span className="text-primary text-[10px] font-medium">{t("chat.compressed")}</span>
           </div>
         )}
-        {/* TODO: workspace dir badge — hidden until file reading is implemented
         {conv?.workspaceDir && (
           <button
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg max-w-[260px] hover:opacity-80 transition-opacity"
-            style={{ backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)", border: "0.5px solid color-mix(in srgb, var(--primary) 20%, transparent)" }}
+            className="max-w-[260px] rounded-lg px-2.5 py-1 transition-opacity hover:opacity-80"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
+              border: "0.5px solid color-mix(in srgb, var(--primary) 20%, transparent)",
+            }}
             title={conv.workspaceDir}
             onClick={async () => {
               if (!window.__TAURI_INTERNALS__) return;
               try {
                 const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
                 await revealItemInDir(conv.workspaceDir!);
-              } catch {}
+              } catch {
+                // ignore opener errors
+              }
             }}
           >
-            <FolderOpen size={12} className="text-primary flex-shrink-0" />
-            <span className="text-[11px] text-primary font-medium truncate">{conv.workspaceDir.split(/[/\\]/).pop()}</span>
+            <span className="flex items-center gap-1.5">
+              <FolderOpen size={12} className="text-primary flex-shrink-0" />
+              <span className="text-primary truncate text-[11px] font-medium">
+                {getWorkspaceName(conv.workspaceDir)}
+              </span>
+            </span>
           </button>
         )}
-        */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -388,25 +421,20 @@ export function DesktopChatPanel({ conversationId }: { conversationId: string })
                   ? t("chat.recompress")
                   : t("chat.compressContext")}
             </DropdownMenuItem>
-            {/* TODO: workspace dir menu item — hidden until file reading is implemented
             {window.__TAURI_INTERNALS__ && (
-              <DropdownMenuItem
-                onClick={async () => {
-                  try {
-                    const { open } = await import("@tauri-apps/plugin-dialog");
-                    const dir = await open({ directory: true, multiple: false });
-                    if (dir && typeof dir === "string") {
-                      await updateConversation(conversationId, { workspaceDir: dir });
-                      notifyDbChange("conversations");
-                    }
-                  } catch {}
-                }}
-              >
-                <FolderOpen size={14} className="mr-2" />
-                {conv?.workspaceDir ? t("settings.changeDir") : t("settings.workspaceDir")}
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={handlePickWorkspace}>
+                  <FolderOpen size={14} className="mr-2" />
+                  {conv?.workspaceDir ? t("settings.changeDir") : t("settings.workspaceDir")}
+                </DropdownMenuItem>
+                {conv?.workspaceDir && (
+                  <DropdownMenuItem onClick={handleClearWorkspace}>
+                    <Trash2 size={14} className="mr-2" />
+                    {t("chat.removeWorkspace")}
+                  </DropdownMenuItem>
+                )}
+              </>
             )}
-            */}
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={async () => {

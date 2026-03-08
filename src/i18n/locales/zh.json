@@ -118,7 +118,9 @@
     "autoDiscussNeedMessage": "请先发送一条消息作为讨论话题",
     "scrollToBottom": "滚动到最新",
     "deleteConversation": "删除对话",
-    "deleteConversationConfirm": "此对话及所有消息将被永久删除。"
+    "deleteConversationConfirm": "此对话及所有消息将被永久删除。",
+    "removeWorkspace": "移除工作目录",
+    "removeWorkspaceConfirm": "移除后，这个对话将不再关联本地项目目录。"
   },
   "models": {
     "title": "模型",
@@ -140,20 +142,20 @@
     "addTool": "添加 MCP 工具",
     "temp": "温度：{{value}}",
     "tools": "工具：{{count}}",
-    "editIdentity": "\u7f16\u8f91\u89d2\u8272",
-    "removeRole": "\u79fb\u9664\u89d2\u8272",
-    "removeRoleHint": "\u6e05\u9664\u5f53\u524d\u89d2\u8272\u8bbe\u5b9a",
-    "editTool": "\u7f16\u8f91\u5de5\u5177",
-    "builtInTools": "\u5185\u7f6e\u5de5\u5177",
-    "noCustomTools": "\u6682\u65e0\u81ea\u5b9a\u4e49 MCP \u5de5\u5177",
-    "importJson": "JSON \u5bfc\u5165",
-    "import": "\u5bfc\u5165",
-    "importHint": "\u7c98\u8d34 MCP \u670d\u52a1\u5668\u914d\u7f6e JSON\u3002\u652f\u6301 {mcpServers: {...}}\u3001\u6570\u7ec4\u6216\u5355\u4e2a\u5bf9\u8c61\u683c\u5f0f\u3002",
-    "importNoTools": "JSON \u4e2d\u672a\u627e\u5230\u6709\u6548\u5de5\u5177",
-    "importInvalidJson": "JSON \u683c\u5f0f\u65e0\u6548",
-    "importSuccess": "\u6210\u529f\u5bfc\u5165 {{count}} \u4e2a\u670d\u52a1\u5668\uff0c\u8bf7\u5f00\u542f\u4ee5\u9a8c\u8bc1\u8fde\u63a5",
-    "importCommandNotSupported": "\u8fd9\u662f\u684c\u9762\u7aef MCP \u914d\u7f6e\uff08npx/uvx \u547d\u4ee4\uff09\uff0c\u624b\u673a\u7aef\u4ec5\u652f\u6301\u57fa\u4e8e URL \u7684\u8fdc\u7a0b MCP \u670d\u52a1\u5668\u3002\u8bf7\u4f7f\u7528\u5305\u542b \"url\" \u5b57\u6bb5\u7684\u914d\u7f6e\u3002",
-    "importDiscoveryFailed": "\u65e0\u6cd5\u4e8e\u6e90\u4e3b\u4e0b\u627e\u5230\u5de5\u5177"
+    "editIdentity": "编辑角色",
+    "removeRole": "移除角色",
+    "removeRoleHint": "清除当前角色设定",
+    "editTool": "编辑工具",
+    "builtInTools": "内置工具",
+    "noCustomTools": "暂无自定义 MCP 工具",
+    "importJson": "JSON 导入",
+    "import": "导入",
+    "importHint": "粘贴 MCP 服务器配置 JSON。支持 {mcpServers: {...}}、数组或单个对象格式。",
+    "importNoTools": "JSON 中未找到有效工具",
+    "importInvalidJson": "JSON 格式无效",
+    "importSuccess": "成功导入 {{count}} 个服务器，请开启以验证连接",
+    "importCommandNotSupported": "这是桌面端 MCP 配置（npx/uvx 命令），手机端仅支持基于 URL 的远程 MCP 服务器。请使用包含 \"url\" 字段的配置。",
+    "importDiscoveryFailed": "无法于源主下找到工具"
   },
   "mcp": {
     "availableTools": "可用工具 ({{count}})"

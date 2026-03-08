@@ -118,7 +118,9 @@
     "autoDiscussNeedMessage": "Send a message first to set the discussion topic",
     "scrollToBottom": "Scroll to latest",
     "deleteConversation": "Delete Conversation",
-    "deleteConversationConfirm": "This conversation and all its messages will be permanently deleted."
+    "deleteConversationConfirm": "This conversation and all its messages will be permanently deleted.",
+    "removeWorkspace": "Remove Workspace Directory",
+    "removeWorkspaceConfirm": "After removing it, this conversation will no longer be linked to a local project directory."
   },
   "models": {
     "title": "Models",
