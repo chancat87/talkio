@@ -204,6 +204,12 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
     const modelList = await fetchProviderModels(provider);
 
+    // Anthropic has no /models endpoint — keep existing models intact
+    if (modelList.length === 0) {
+      get().updateProvider(providerId, { status: "connected" });
+      return get().models.filter((m) => m.providerId === providerId);
+    }
+
     const existingOther = get().models.filter((m) => m.providerId !== providerId);
     const existingForProvider = get().models.filter((m) => m.providerId === providerId);
 

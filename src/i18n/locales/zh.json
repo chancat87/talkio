@@ -277,7 +277,7 @@
     "namePlaceholder": "我的供应商",
     "connectionSuccess": "连接成功",
     "saveAndFetch": "保存并获取",
-    "apiFormat": "API 格式",
+    "apiFormat": "服务商类型",
     "models": "模型"
   },
   "providers": {

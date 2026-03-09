@@ -11,10 +11,6 @@ import {
 } from "../../icons";
 import type { ProviderType, ApiFormat, CustomHeader } from "../../types";
 
-const PROVIDER_TYPE_OPTIONS: { value: ProviderType; label: string }[] = [
-  { value: "openai", label: "OpenAI" },
-];
-
 export interface ProviderConfigFormProps {
   name: string;
   onNameChange: (v: string) => void;
@@ -32,6 +28,8 @@ export interface ProviderConfigFormProps {
   onProviderEnabledChange: (v: boolean) => void;
   /** Show name/URL/type fields (false for preset providers) */
   showBaseFields: boolean;
+  /** Show API format selector (only for custom/OpenAI-compatible entry) */
+  showApiFormatSelector?: boolean;
 }
 
 export function ProviderConfigForm(props: ProviderConfigFormProps) {
@@ -55,7 +53,7 @@ export function ProviderConfigForm(props: ProviderConfigFormProps) {
               placeholder="e.g. OpenRouter"
             />
           </FormRow>
-          <FormRow label={t("providerEdit.baseUrl")}>
+          <FormRow label={t("providerEdit.baseUrl")} isLast={!props.showApiFormatSelector}>
             <input
               className="text-foreground flex-1 bg-transparent text-[16px] outline-none"
               value={props.baseUrl}
@@ -63,51 +61,29 @@ export function ProviderConfigForm(props: ProviderConfigFormProps) {
               placeholder="https://api.example.com/v1"
             />
           </FormRow>
-          <FormRow label={t("providerEdit.type")}>
-            <div className="flex flex-wrap gap-2">
-              {PROVIDER_TYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => props.onProviderTypeChange(opt.value)}
-                  className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors"
-                  style={{
-                    border: `1px solid ${props.providerType === opt.value ? "var(--primary)" : "var(--border)"}`,
-                    backgroundColor:
-                      props.providerType === opt.value
-                        ? "color-mix(in srgb, var(--primary) 10%, transparent)"
-                        : "transparent",
-                    color:
-                      props.providerType === opt.value
-                        ? "var(--primary)"
-                        : "var(--muted-foreground)",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </FormRow>
-          <FormRow label={t("providerEdit.apiFormat")} isLast>
-            <div className="flex gap-1.5">
-              {(["chat-completions", "responses"] as const).map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => props.onApiFormatChange(fmt)}
-                  className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors"
-                  style={{
-                    border: `1px solid ${props.apiFormat === fmt ? "var(--primary)" : "var(--border)"}`,
-                    backgroundColor:
-                      props.apiFormat === fmt
-                        ? "color-mix(in srgb, var(--primary) 10%, transparent)"
-                        : "transparent",
-                    color: props.apiFormat === fmt ? "var(--primary)" : "var(--muted-foreground)",
-                  }}
-                >
-                  {fmt === "chat-completions" ? "Chat Completions" : "Responses"}
-                </button>
-              ))}
-            </div>
-          </FormRow>
+          {props.showApiFormatSelector && (
+            <FormRow label={t("providerEdit.apiFormat")} isLast>
+              <div className="flex gap-1.5">
+                {(["chat-completions", "responses"] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={() => props.onApiFormatChange(fmt)}
+                    className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors"
+                    style={{
+                      border: `1px solid ${props.apiFormat === fmt ? "var(--primary)" : "var(--border)"}`,
+                      backgroundColor:
+                        props.apiFormat === fmt
+                          ? "color-mix(in srgb, var(--primary) 10%, transparent)"
+                          : "transparent",
+                      color: props.apiFormat === fmt ? "var(--primary)" : "var(--muted-foreground)",
+                    }}
+                  >
+                    {fmt === "chat-completions" ? "OpenAI" : "OpenAI Responses"}
+                  </button>
+                ))}
+              </div>
+            </FormRow>
+          )}
         </div>
       )}
 

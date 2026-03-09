@@ -277,7 +277,7 @@
     "namePlaceholder": "My Provider",
     "connectionSuccess": "Connection successful",
     "saveAndFetch": "Save & Fetch",
-    "apiFormat": "API Format",
+    "apiFormat": "Provider Type",
     "models": "Models"
   },
   "providers": {

@@ -5,6 +5,7 @@ import {
   IoRefreshOutline,
   IoSearchOutline,
   IoCloseCircle,
+  IoTrashOutline,
   IoEyeOutline,
   IoConstructOutline,
   IoBulbOutline,
@@ -34,6 +35,7 @@ export function ProviderModelList({ providerId, pulling, onRefresh }: ProviderMo
     (s: ProviderStoreState) => s.setProviderModelsEnabled,
   );
   const addModelById = useProviderStore((s: ProviderStoreState) => s.addModelById);
+  const deleteModel = useProviderStore((s: ProviderStoreState) => s.deleteModel);
   const probeModelCapabilities = useProviderStore(
     (s: ProviderStoreState) => s.probeModelCapabilities,
   );
@@ -155,15 +157,24 @@ export function ProviderModelList({ providerId, pulling, onRefresh }: ProviderMo
                 </p>
                 <p className="text-muted-foreground truncate text-[12px]">{m.modelId}</p>
               </div>
-              <label className="relative inline-flex flex-shrink-0 cursor-pointer items-center">
-                <input
-                  type="checkbox"
-                  checked={m.enabled}
-                  onChange={() => toggleModel(m.id)}
-                  className="peer sr-only"
-                />
-                <div className="peer-checked:bg-primary bg-muted-foreground/30 h-6 w-11 rounded-full after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full" />
-              </label>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={m.enabled}
+                    onChange={() => toggleModel(m.id)}
+                    className="peer sr-only"
+                  />
+                  <div className="peer-checked:bg-primary bg-muted-foreground/30 h-6 w-11 rounded-full after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full" />
+                </label>
+                <button
+                  onClick={() => deleteModel(m.id)}
+                  className="p-1 active:opacity-60"
+                  title={t("common.delete")}
+                >
+                  <IoTrashOutline size={16} color="var(--destructive)" />
+                </button>
+              </div>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {[
