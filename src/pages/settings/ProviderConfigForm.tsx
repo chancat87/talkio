@@ -63,7 +63,7 @@ export function ProviderConfigForm(props: ProviderConfigFormProps) {
               placeholder="https://api.example.com/v1"
             />
           </FormRow>
-          <FormRow label={t("providerEdit.type")} isLast>
+          <FormRow label={t("providerEdit.type")}>
             <div className="flex flex-wrap gap-2">
               {PROVIDER_TYPE_OPTIONS.map((opt) => (
                 <button
@@ -83,6 +83,27 @@ export function ProviderConfigForm(props: ProviderConfigFormProps) {
                   }}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </FormRow>
+          <FormRow label={t("providerEdit.apiFormat")} isLast>
+            <div className="flex gap-1.5">
+              {(["chat-completions", "responses"] as const).map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => props.onApiFormatChange(fmt)}
+                  className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors"
+                  style={{
+                    border: `1px solid ${props.apiFormat === fmt ? "var(--primary)" : "var(--border)"}`,
+                    backgroundColor:
+                      props.apiFormat === fmt
+                        ? "color-mix(in srgb, var(--primary) 10%, transparent)"
+                        : "transparent",
+                    color: props.apiFormat === fmt ? "var(--primary)" : "var(--muted-foreground)",
+                  }}
+                >
+                  {fmt === "chat-completions" ? "Chat Completions" : "Responses"}
                 </button>
               ))}
             </div>
@@ -156,33 +177,6 @@ export function ProviderConfigForm(props: ProviderConfigFormProps) {
               />
               <div className="peer-checked:bg-primary bg-muted-foreground/30 h-6 w-11 rounded-full after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full" />
             </label>
-          </div>
-
-          {/* API Format */}
-          <div
-            className="flex items-center justify-between px-4 py-3.5"
-            style={{ borderBottom: "0.5px solid var(--border)" }}
-          >
-            <span className="text-foreground text-[15px]">{t("providerEdit.apiFormat")}</span>
-            <div className="flex gap-1.5">
-              {(["chat-completions", "responses"] as const).map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => props.onApiFormatChange(fmt)}
-                  className="rounded-full px-3 py-1 text-[12px] font-medium transition-colors"
-                  style={{
-                    border: `1px solid ${props.apiFormat === fmt ? "var(--primary)" : "var(--border)"}`,
-                    backgroundColor:
-                      props.apiFormat === fmt
-                        ? "color-mix(in srgb, var(--primary) 10%, transparent)"
-                        : "transparent",
-                    color: props.apiFormat === fmt ? "var(--primary)" : "var(--muted-foreground)",
-                  }}
-                >
-                  {fmt === "chat-completions" ? "Chat Completions" : "Responses"}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Custom Headers */}
