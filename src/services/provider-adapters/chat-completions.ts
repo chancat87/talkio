@@ -24,7 +24,6 @@ function buildRequestBody(
     ...(identity?.params?.temperature !== undefined
       ? { temperature: identity.params.temperature }
       : {}),
-    ...(identity?.params?.topP !== undefined ? { top_p: identity.params.topP } : {}),
     ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
     ...(toolDefs.length > 0 ? { tools: toolDefs } : {}),
   };

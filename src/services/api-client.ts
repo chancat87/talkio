@@ -117,7 +117,6 @@ export class ApiClient {
     };
     if (system) body.system = system;
     if (request.temperature !== undefined) body.temperature = request.temperature;
-    if (request.top_p !== undefined) body.top_p = request.top_p;
     if (request.tools) {
       body.tools = request.tools.map((t) => ({
         name: t.function.name,
@@ -247,7 +246,6 @@ export class ApiClient {
     if (systemInstruction) body.systemInstruction = systemInstruction;
     const genConfig: Record<string, unknown> = {};
     if (request.temperature !== undefined) genConfig.temperature = request.temperature;
-    if (request.top_p !== undefined) genConfig.topP = request.top_p;
     if (request.max_tokens !== undefined) genConfig.maxOutputTokens = request.max_tokens;
     // Map reasoning_effort to Gemini's thinkingConfig
     if ((request as any).reasoning_effort) {

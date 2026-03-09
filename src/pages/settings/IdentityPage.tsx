@@ -253,7 +253,6 @@ function IdentityForm({
   const [icon, setIcon] = useState(identity?.icon ?? "general");
   const [systemPrompt, setSystemPrompt] = useState(identity?.systemPrompt ?? "");
   const [temperature, setTemperature] = useState(identity?.params?.temperature ?? 0.7);
-  const [topP, setTopP] = useState(identity?.params?.topP ?? 0.9);
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>(identity?.mcpToolIds ?? []);
   const [selectedServerIds, setSelectedServerIds] = useState<string[]>(
     identity?.mcpServerIds ?? [],
@@ -289,7 +288,7 @@ function IdentityForm({
       name: name.trim(),
       icon,
       systemPrompt: systemPrompt.trim(),
-      params: { temperature, topP },
+      params: { temperature },
       mcpToolIds: identityBoundBuiltInToolNames,
       mcpServerIds: selectedServerIds,
     });
@@ -297,7 +296,6 @@ function IdentityForm({
     name,
     systemPrompt,
     temperature,
-    topP,
     icon,
     selectedToolIds,
     selectedServerIds,
@@ -523,35 +521,6 @@ function IdentityForm({
                   step="0.1"
                   value={temperature}
                   onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="absolute inset-0 w-full cursor-pointer opacity-0"
-                />
-              </div>
-            </div>
-            {/* Top P */}
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between">
-                <span className="text-foreground text-[15px]">{t("identityEdit.topP")}</span>
-                <span className="text-muted-foreground font-mono text-[15px] tabular-nums">
-                  {topP.toFixed(2)}
-                </span>
-              </div>
-              <div className="relative mt-2">
-                <div
-                  className="h-[4px] w-full rounded-full"
-                  style={{ backgroundColor: "var(--muted)" }}
-                >
-                  <div
-                    className="h-[4px] rounded-full transition-all"
-                    style={{ backgroundColor: "var(--primary)", width: `${topP * 100}%` }}
-                  />
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={topP}
-                  onChange={(e) => setTopP(parseFloat(e.target.value))}
                   className="absolute inset-0 w-full cursor-pointer opacity-0"
                 />
               </div>

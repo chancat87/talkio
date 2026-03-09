@@ -65,9 +65,6 @@ function buildRequestBody(
   if (identity?.params?.temperature !== undefined) {
     body.temperature = identity.params.temperature;
   }
-  if (identity?.params?.topP !== undefined) {
-    body.top_p = identity.params.topP;
-  }
   if (reasoningEffort) {
     body.reasoning = { effort: reasoningEffort };
   }

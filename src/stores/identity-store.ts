@@ -11,7 +11,7 @@ import { generateId } from "../lib/id";
 const IDENTITIES_KEY = "identities";
 const PRESET_VERSION_KEY = "preset_identities_version";
 
-const DEFAULT_IDENTITY_PARAMS = { temperature: 0.7, topP: 0.9 };
+const DEFAULT_IDENTITY_PARAMS = { temperature: 0.7 };
 const PRESET_IDENTITIES_VERSION = 3;
 const PRESET_IDENTITIES = [
   { nameKey: "presets.socrates.name", icon: "research", promptKey: "presets.socrates.prompt" },

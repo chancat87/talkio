@@ -308,7 +308,6 @@
     "systemPromptPlaceholder": "You are a...",
     "parameters": "Parameters",
     "temperature": "Temperature",
-    "topP": "Top P",
     "bindTools": "Bind MCP Tools",
     "createIdentity": "Create Role",
     "saveChanges": "Save Changes",

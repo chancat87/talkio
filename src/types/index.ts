@@ -48,7 +48,6 @@ export type ReasoningEffort = "none" | "low" | "medium" | "high" | "auto";
 
 export interface IdentityParams {
   temperature: number;
-  topP: number;
   reasoningEffort?: ReasoningEffort;
 }
 
@@ -239,7 +238,6 @@ export interface ChatApiRequest {
   messages: ChatApiMessage[];
   stream: boolean;
   temperature?: number;
-  top_p?: number;
   max_tokens?: number;
   tools?: ChatApiToolDef[];
   [key: string]: unknown;

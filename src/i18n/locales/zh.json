@@ -308,7 +308,6 @@
     "systemPromptPlaceholder": "你是一个...",
     "parameters": "参数",
     "temperature": "温度",
-    "topP": "Top P",
     "bindTools": "绑定 MCP 工具",
     "createIdentity": "创建角色",
     "saveChanges": "保存更改",
