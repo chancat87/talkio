@@ -17,10 +17,12 @@ import {
   Moon,
   Download,
   Upload,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { useProviderStore } from "../../stores/provider-store";
+import { useChatStore } from "../../stores/chat-store";
 import { useSettingsStore, type AppSettings } from "../../stores/settings-store";
 import { useConfirm, appAlert } from "../../components/shared/ConfirmDialogProvider";
 import { createBackup, downloadBackup, pickAndImportBackup } from "../../services/backup";
@@ -92,6 +94,7 @@ export function SettingsPage({
   onSubPageChange,
 }: { onSubPageChange?: (inSubPage: boolean) => void } = {}) {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
   const providers = useProviderStore(
     (s: ReturnType<typeof useProviderStore.getState>) => s.providers,
   );
@@ -366,6 +369,23 @@ export function SettingsPage({
                     ? t("settings.importUnsupportedVersion", { version: result.errorDetail })
                     : t("settings.importParseError");
                 await appAlert(`${t("settings.importFailed")}: ${msg}`);
+              }
+            }}
+          />
+          <SettingsRow
+            icon={Trash2}
+            iconColor="#ef4444"
+            iconBg="rgba(239,68,68,0.1)"
+            label={t("settings.deleteAllConversations")}
+            onPress={async () => {
+              const ok = await confirm({
+                title: t("settings.deleteAllConversations"),
+                description: t("settings.deleteAllConversationsConfirm"),
+                destructive: true,
+              });
+              if (ok) {
+                await useChatStore.getState().deleteAllConversations();
+                await appAlert(t("settings.deleteAllConversationsSuccess"));
               }
             }}
             isLast

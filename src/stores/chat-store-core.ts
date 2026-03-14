@@ -1,5 +1,5 @@
 import type { Conversation, ConversationParticipant } from "../types";
-import { deleteConversation as dbDeleteConversation, insertConversation } from "../storage/database";
+import { deleteConversation as dbDeleteConversation, deleteAllConversations as dbDeleteAllConversations, insertConversation } from "../storage/database";
 import { notifyDbChange } from "../hooks/useDatabase";
 import { useProviderStore } from "./provider-store";
 import { generateId } from "../lib/id";
@@ -62,6 +62,11 @@ export async function createConversationRecord(
 export async function deleteConversationRecord(id: string): Promise<void> {
   await dbDeleteConversation(id);
   notifyDbChange("conversations");
+}
+
+export async function deleteAllConversationRecords(): Promise<void> {
+  await dbDeleteAllConversations();
+  notifyDbChange("all");
 }
 
 export function deriveConversationViewState(

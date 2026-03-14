@@ -12,6 +12,7 @@ import {
   autoTitle,
   createConversationRecord,
   deleteConversationRecord,
+  deleteAllConversationRecords,
   deriveConversationViewState,
   stopConversationGeneration,
 } from "./chat-store-core";
@@ -53,6 +54,7 @@ export interface ChatState {
     membersWithIdentity?: { modelId: string; identityId: string | null }[],
   ) => Promise<Conversation>;
   deleteConversation: (id: string) => Promise<void>;
+  deleteAllConversations: () => Promise<void>;
   setCurrentConversation: (id: string | null) => void;
   sendMessage: (
     text: string,
@@ -118,6 +120,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (get().currentConversationId === id) {
       set({ currentConversationId: null });
     }
+  },
+
+  deleteAllConversations: async () => {
+    await deleteAllConversationRecords();
+    set({ currentConversationId: null, activeBranchId: null });
   },
 
   setCurrentConversation: (id: string | null) => {

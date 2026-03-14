@@ -416,6 +416,12 @@ export async function deleteConversation(id: string): Promise<void> {
   await db.execute(`DELETE FROM conversations WHERE id = $1`, [id]);
 }
 
+export async function deleteAllConversations(): Promise<void> {
+  const db = await getDb();
+  await db.execute(`DELETE FROM messages`);
+  await db.execute(`DELETE FROM conversations`);
+}
+
 export async function getAllConversations(): Promise<Conversation[]> {
   const db = await getDb();
   const rows = await db.select(`SELECT * FROM conversations ORDER BY pinned DESC, updatedAt DESC`);
