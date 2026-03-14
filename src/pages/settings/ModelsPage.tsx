@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useMobileNav } from "../../contexts/MobileNavContext";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +38,8 @@ export function ModelsPage({
   const createConversation = useChatStore((s) => s.createConversation);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const goToChat = useCallback(
     (convId: string) => {
@@ -63,6 +65,45 @@ export function ModelsPage({
     () => groupModelsByProvider(filtered, getProviderById),
     [filtered, getProviderById],
   );
+
+  // Build deduplicated initial → first section title mapping
+  const indexEntries = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const s of sections) {
+      const ch = s.title.charAt(0).toUpperCase();
+      if (!seen.has(ch)) seen.set(ch, s.title);
+    }
+    return Array.from(seen.entries()); // [[initial, sectionTitle], ...]
+  }, [sections]);
+
+  const handleIndexClick = useCallback((sectionTitle: string) => {
+    const el = document.getElementById(`section-${sectionTitle}`);
+    if (el && scrollRef.current) {
+      const container = scrollRef.current;
+      const offset = el.offsetTop - container.offsetTop;
+      container.scrollTo({ top: offset, behavior: "smooth" });
+    }
+  }, []);
+
+  // Track which section is currently visible
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || sections.length === 0) return;
+    const onScroll = () => {
+      let current = sections[0]?.title ?? null;
+      for (const section of sections) {
+        const el = document.getElementById(`section-${section.title}`);
+        if (el) {
+          const top = el.offsetTop - container.offsetTop - container.scrollTop;
+          if (top <= 40) current = section.title;
+        }
+      }
+      setActiveSection(current);
+    };
+    onScroll();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [sections]);
 
   const handleStartChat = useCallback(
     async (model: Model) => {
@@ -132,7 +173,8 @@ export function ModelsPage({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 24 }}>
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={scrollRef} className="h-full overflow-y-auto" style={{ paddingBottom: 24 }}>
         {sections.length === 0 ? (
           <EmptyState
             icon={<IoPeopleOutline size={28} color="var(--muted-foreground)" />}
@@ -141,7 +183,7 @@ export function ModelsPage({
           />
         ) : (
           sections.map((section) => (
-            <div key={section.title}>
+            <div key={section.title} id={`section-${section.title}`}>
               {/* Section Header */}
               <div
                 className="sticky top-0 z-10 px-5 py-1.5"
@@ -187,6 +229,35 @@ export function ModelsPage({
             </div>
           ))
         )}
+      </div>
+
+      {/* Initial Index Sidebar — floating overlay */}
+      {indexEntries.length > 1 && (
+        <div
+          className="absolute top-1/2 right-0.5 z-20 flex -translate-y-1/2 flex-col items-center rounded-full py-1 px-[3px]"
+          style={{ backgroundColor: "color-mix(in srgb, var(--card) 80%, transparent)" }}
+        >
+          {indexEntries.map(([initial, sectionTitle]) => {
+            const isActive = activeSection === sectionTitle;
+            return (
+              <button
+                key={initial}
+                onClick={() => handleIndexClick(sectionTitle)}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold leading-none transition-colors active:opacity-60"
+                style={{
+                  color: isActive ? "var(--primary)" : "var(--muted-foreground)",
+                  backgroundColor: isActive
+                    ? "color-mix(in srgb, var(--primary) 15%, transparent)"
+                    : "transparent",
+                }}
+                title={sectionTitle}
+              >
+                {initial}
+              </button>
+            );
+          })}
+        </div>
+      )}
       </div>
     </div>
   );
