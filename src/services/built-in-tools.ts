@@ -7,6 +7,7 @@
 import { readWorkspaceFile, listWorkspaceDir, searchWorkspaceFiles, editWorkspaceFile, isBinaryPath } from "./workspace";
 import { gitExecute, isGitWriteCommand } from "./git-tools";
 import { appConfirm } from "../components/shared/ConfirmDialogProvider";
+import { isDesktop } from "../lib/platform";
 
 export interface ToolResult {
   success: boolean;
@@ -26,6 +27,8 @@ export interface BuiltInToolDef {
   enabledByDefault?: boolean;
   /** If true, the tool is only available when a workspace is bound */
   requiresWorkspace?: boolean;
+  /** If true, the tool is only available on desktop (not on Android/iOS) */
+  desktopOnly?: boolean;
 }
 
 async function handleGetCurrentTime(): Promise<ToolResult> {
@@ -252,6 +255,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleReadWorkspaceFile(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "list_workspace_dir",
@@ -269,6 +273,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleListWorkspaceDir(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "search_workspace",
@@ -287,6 +292,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleSearchWorkspace(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "edit_workspace_file",
@@ -313,6 +319,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleEditWorkspaceFile(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   // ── Git tools ──
   {
@@ -323,6 +330,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleGitStatus(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "git_diff",
@@ -344,6 +352,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleGitDiff(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "git_log",
@@ -361,6 +370,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleGitLog(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
   {
     name: "git_command",
@@ -384,6 +394,7 @@ export const BUILT_IN_TOOLS: BuiltInToolDef[] = [
     handler: (args, context) => handleGitCommand(args, context),
     enabledByDefault: true,
     requiresWorkspace: true,
+    desktopOnly: true,
   },
 ];
 
@@ -413,7 +424,7 @@ export async function executeBuiltInTool(
  */
 export function getBuiltInToolDefs(context?: ToolContext) {
   return BUILT_IN_TOOLS
-    .filter((t) => !t.requiresWorkspace || !!context?.workspaceDir)
+    .filter((t) => (!t.requiresWorkspace || !!context?.workspaceDir) && (!t.desktopOnly || isDesktop))
     .map((t) => ({
       type: "function" as const,
       function: {

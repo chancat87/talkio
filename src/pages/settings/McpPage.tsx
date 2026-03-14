@@ -2,6 +2,7 @@ import { useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { IoAddCircleOutline, IoChevronBack } from "../../icons";
 import { isStdioAvailable } from "../../services/mcp/stdio-transport";
+import { isDesktop } from "../../lib/platform";
 import type { CustomHeader } from "../../types";
 import { useMcpStore, type McpServerConfig, type McpTool } from "../../stores/mcp-store";
 import { useConfirm, appAlert } from "../../components/shared/ConfirmDialogProvider";
@@ -48,6 +49,9 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
   const deleteServer = useMcpStore((s) => s.deleteServer);
   const updateServer = useMcpStore((s) => s.updateServer);
   const addServer = useMcpStore((s) => s.addServer);
+  const visibleBuiltInTools = isDesktop
+    ? BUILT_IN_TOOLS
+    : BUILT_IN_TOOLS.filter((t) => !t.desktopOnly);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [isImporting, setIsImporting] = useState(false);
@@ -186,7 +190,7 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
   return (
     <div className="h-full overflow-y-auto" style={{ backgroundColor: "var(--background)" }}>
       <div className="pb-8">
-        {servers.length === 0 && BUILT_IN_TOOLS.length === 0 ? (
+        {servers.length === 0 && visibleBuiltInTools.length === 0 ? (
           <EmptyState
             icon={<IoAddCircleOutline size={28} color="var(--muted-foreground)" />}
             title={t("personas.noCustomTools")}
@@ -195,7 +199,7 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
         ) : (
           <>
             {/* Built-in Tools (global enable/disable) */}
-            {BUILT_IN_TOOLS.length > 0 && (
+            {visibleBuiltInTools.length > 0 && (
               <div
                 style={{
                   borderTop: "0.5px solid var(--border)",
@@ -207,7 +211,7 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
                     {t("personas.builtInTools")}
                   </p>
                 </div>
-                {BUILT_IN_TOOLS.map((tool, idx) => {
+                {visibleBuiltInTools.map((tool, idx) => {
                   const enabled = builtInEnabledByName[tool.name] !== false;
                   return (
                     <div
@@ -215,7 +219,7 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
                       className="flex items-center gap-4 px-4 py-3"
                       style={{
                         borderBottom:
-                          idx < BUILT_IN_TOOLS.length - 1 ? "0.5px solid var(--border)" : "none",
+                          idx < visibleBuiltInTools.length - 1 ? "0.5px solid var(--border)" : "none",
                       }}
                     >
                       <div className="min-w-0 flex-1">
@@ -302,7 +306,7 @@ export const McpPage = forwardRef<McpPageHandle, McpPageProps>(function McpPage(
         )}
 
         {/* Actions */}
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowImportModal(true)}
